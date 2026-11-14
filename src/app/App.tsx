@@ -1,7 +1,7 @@
 import RadioPanel from '../radio/RadioPanel';
 import {opticalExamples,opticalCircuit,type OpticalExample} from '../circuit/max30102Examples';
 import {sdExamples,sdCircuit,type SDExample} from '../circuit/sdExamples';
-import {runtimeAsset} from '../platform/assets';
+import {runtimeAsset, appAsset } from '../platform/assets';
 import {rtcExamples,rtcCircuit,type RTCExample} from '../circuit/rtcExamples';
 import {
   useEffect,
@@ -880,7 +880,7 @@ export default function App() {
             <button className="board-switch" aria-label="Pločica i jezik" onClick={()=>openDialog('board')}><strong>{boardProfile.title} ↗</strong><span>{languageName(p.language)} · {boardProfile.logicVoltage.toLocaleString('hr-HR')} V</span></button>
             <button onClick={()=>openDialog('matrix')}>Katalog i matrica podrške</button>
             {p.language==='arduino-cpp'&&<button className="source-export" onClick={()=>{try{download(safeFilename(p.title)+'_Arduino.zip',exportSketch(p),'application/zip');notify('Pripremljen je izvorni sketch za Arduino IDE.');}catch(e){notify((e as Error).message);}}}>Izvezi za Arduino IDE</button>}
-            <a href="/diagnostics.html" target="_blank" rel="noreferrer">
+            <a href={appAsset('diagnostics.html')} target="_blank" rel="noreferrer">
               Provjere jezgre ↗
             </a>
           </div>
@@ -1260,7 +1260,7 @@ export default function App() {
               <p>
                 <b>Granice ESP32 modela:</b> funkcionalni modeli bez emulacije procesora i analogne dinamike. AHT10 koristi zasebnu sabirnicu; podržani su repeated-start i memorijski I2C pozivi. Pet nastavnih vježbi i predaja dostupni su na kartici Vježba. Stvarni učenički pilot još treba provesti; offline paket dostupan je kroz Status i offline. Uno/Nano izvršavaju stvarni prevedeni AVR program: osnovni GPIO, ADC, timer PWM, vanjske prekide i UART. Novi izvor prevodi se lokalnim razvojnim mostom. TWI i software I2C podržavaju AHT10, BMP180, BMP280, AM2320, OLED SSD1306 obiju visina i LCD1602/PCF8574, a Servo koristi Timer1 impulse. SPI podržava ST7735, ILI9341, zaseban BMP280 i XPT2046 kroz vidljive Lab drivere. XPT2046 daje sirove X/Y/Z1/Z2; program kalibrira, rotira i obrađuje dodir. Fizička pločica i Safari/iOS još nisu potvrđeni provjerom.
               </p>
-              <a href="/diagnostics.html" target="_blank" rel="noreferrer">
+              <a href={appAsset('diagnostics.html')} target="_blank" rel="noreferrer">
                 Otvori 10 provjera jezgre ↗
               </a>
             </div>
@@ -1523,17 +1523,17 @@ export default function App() {
                 korisnikove pločice još nije potvrđen.
               </p>
               <div className="help-links">
-                <a href="/guide.html" target="_blank" rel="noreferrer">Upute i oporavak ↗</a>
+                <a href={appAsset('guide.html')} target="_blank" rel="noreferrer">Upute i oporavak ↗</a>
                 <button onClick={() => setDialog('system')}>Status i offline rad</button>
-                <a href="/pilot.html" target="_blank" rel="noreferrer">Obrazac stvarnog pilota ↗</a>
-                <a href="/diagnostics.html" target="_blank" rel="noreferrer">
+                <a href={appAsset('pilot.html')} target="_blank" rel="noreferrer">Obrazac stvarnog pilota ↗</a>
+                <a href={appAsset('diagnostics.html')} target="_blank" rel="noreferrer">
                   Provjere jezgre ↗
                 </a>
-                <a href="/report.html" target="_blank" rel="noreferrer">
+                <a href={appAsset('report.html')} target="_blank" rel="noreferrer">
                   Izvješće etape 0 ↗
                 </a>
                 <a
-                  href="/licenses/THIRD-PARTY.txt"
+                  href={appAsset('licenses/THIRD-PARTY.txt')}
                   target="_blank"
                   rel="noreferrer"
                 >

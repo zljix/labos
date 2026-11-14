@@ -1,3 +1,4 @@
+import {appAsset} from '../platform/assets';
 import {useEffect,useState} from 'react';
 import {getBoard} from '../boards/profiles';
 import {terminals} from '../circuit/model';
@@ -15,7 +16,7 @@ export function UrsCatalog({busy,initialTarget,open}:{busy:boolean;initialTarget
   <p className="lesson-small">Odabrani cilj nudi {ursLessons.flatMap(l=>l.variants).filter(v=>variantAvailable(v,target)).length}/{ursLessons.flatMap(l=>l.variants).length} pripremljenih varijanti. Početni C++ primjeri sadrže valjan prijevod; izmijenjeni izvor traži lokalni prevoditelj. Odabrani primjer ima svoj program, spojeve i granice modela. Fizička oprema i učenički pilot provjeravaju se zasebno.</p>
   <div className="urs-cards">{visible.map(l=>{const variants=l.variants.filter(v=>variantAvailable(v,target));return <details key={l.id} className="urs-card"><summary><span className="lesson-number">{String(l.number).padStart(2,'0')}</span><span><b>{l.title}</b><small>{l.minutes} · {variants.length}/{l.variants.length} varijanti za ovaj cilj</small></span></summary><p>{l.goal}</p><p className="lesson-small">{l.before}</p>{l.id==='radio'&&<label>Cilj čvora B<select value={peer} onChange={e=>setPeer(e.target.value as UrsTarget)}>{Object.entries(ursTargets).map(([id,t])=><option key={id} value={id}>{t.label}</option>)}</select></label>}<div className="lesson-inline-actions">{variants.map(v=><button key={v.id} disabled={busy} onClick={()=>open(l.id,v.id,target,peer)}>Otvori · {v.title}</button>)}</div>{!variants.length&&<p role="status">Za ovaj cilj nema pripremljene varijante. Odaberi drugi cilj iznad.</p>}</details>;})}</div>
   {!visible.length&&<p role="status">Nema vježbe za uneseni pojam.</p>}
-  <p><a href="/pilot.html" target="_blank" rel="noreferrer">Obrazac za stvarni učenički pilot ↗</a> · <a href="/urs-podrska.csv" download>Preuzmi matricu podrške CSV</a></p>
+  <p><a href={appAsset('pilot.html')} target="_blank" rel="noreferrer">Obrazac za stvarni učenički pilot ↗</a> · <a href={appAsset('urs-podrska.csv')} download>Preuzmi matricu podrške CSV</a></p>
  </section>;
 }
 interface Props {project:Project;change:(w:UrsWork)=>void;busy:boolean;teacher:boolean;toggleTeacher:()=>void;catalog:()=>void;circuit:()=>void;run:()=>void;radio:()=>void;record:()=>void;submit:()=>void;review:(verdict:'revise'|'reviewed',note:string)=>void;importReview:()=>void}

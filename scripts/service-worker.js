@@ -1,8 +1,9 @@
 /* Generated with a content-addressed manifest at build time. No student data. */
 const PACKAGE = /* LAB_PACKAGE */;
-const PREFIX = 'esp32-micropython-lab-app-';
+const BASE = PACKAGE.base ?? '/';
+const PREFIX = 'esp32-micropython-lab-app-' + (BASE === '/' ? '' : encodeURIComponent(BASE) + '-');
 const CACHE = PREFIX + PACKAGE.build;
-const MARKER = '/.lab-offline-ready';
+const MARKER = BASE + '.lab-offline-ready';
 const urls = new Set(PACKAGE.files.map(file => file.url));
 const origin = self.location.origin;
 const key = path => new URL(path, origin).href;
@@ -48,7 +49,7 @@ self.addEventListener('message', event => {
   if (event.data?.type === 'LAB_STATUS') event.waitUntil(status().then(reply).catch(error => reply({ error: String(error) })));
   if (event.data?.type === 'LAB_REPAIR') event.waitUntil(prepare().then(status).then(reply).catch(error => reply({ error: 'Paket nije ponovno preuzet. ' + String(error) })));
   if (event.data?.type === 'LAB_ACTIVATE') event.waitUntil((async () => {
-    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const windows = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).filter(client => !client.url || new URL(client.url).pathname.startsWith(BASE));
     if (windows.length > 1) { reply({ error: 'Zatvori druge kartice ovog laboratorija pa ponovi ažuriranje.' }); return; }
     reply({ accepted: true });
     await self.skipWaiting();
@@ -57,8 +58,8 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== origin || url.search) return;
-  const path = url.pathname === '/' ? '/index.html' : url.pathname;
-  const versioned = path.startsWith('/app/') || path.startsWith('/assets/');
+  const path = url.pathname === BASE ? BASE + 'index.html' : url.pathname;
+  const versioned = path.startsWith(BASE + 'app/') || path.startsWith(BASE + 'assets/');
   if (!urls.has(path) && !versioned) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);

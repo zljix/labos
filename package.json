@@ -51,7 +51,9 @@
     "s3:native": "node --import tsx verification/s3-native.ts",
     "s3:native:verify": "node --import tsx verification/s3-native-verify.ts",
     "test:i2c-levels": "node --import tsx --test verification/i2c-levels.test.ts",
-    "test:class-review": "node --import tsx --test verification/class-review.test.ts"
+    "test:class-review": "node --import tsx --test verification/class-review.test.ts",
+    "build:pages": "node scripts/build-pages.mjs",
+    "test:pages": "node --test verification/pages.test.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",

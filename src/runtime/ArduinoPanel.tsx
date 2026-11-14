@@ -1,3 +1,4 @@
+import {appAsset} from '../platform/assets';
 import {useEffect,useRef,useState} from 'react';
 import type {Project} from '../project/model';
 import {AVR_LIBRARIES,libraryManifest} from '../../public/avr-contract.mjs';
@@ -48,7 +49,7 @@ export function ArduinoBuildPanel({project,importBuild,compiler,setLibraries,goT
       <h3>Lokalni prevoditelj</h3><p>Jednom pripremi prevoditelj na računalu. Nakon povezivanja ovaj gumb šalje točan izvor lokalnom prevoditelju i vraća rezultat u projekt.</p>
       <p className="compiler-connection" role="status">{compiler.message}</p>
       {compiler.connection!=='connected'?<>
-        <ol><li><a href="/arduino-development-bridge.zip" download>Preuzmi paket prevoditelja</a>, raspakiraj ga i prati README. {s3?'S3: Clang 19.1.7, WASM linker i Binaryen 120.':'Uno/Nano: Node.js 22+, Arduino CLI 1.3.1.'}</li><li>{s3?<>Postavi alate prema README pa pokreni <b>Pokreni.cmd</b></>:<>Jednom pokreni <b>Pripremi.cmd</b>, a zatim <b>Pokreni.cmd</b></>} (Linux/macOS: uputa u README).</li><li>Kopiraj ispisanu vezu u polje. Povezivanje otvara lokalnu karticu; ostavi je otvorenu.</li></ol>
+        <ol><li><a href={appAsset('arduino-development-bridge.zip')} download>Preuzmi paket prevoditelja</a>, raspakiraj ga i prati README. {s3?'S3: Clang 19.1.7, WASM linker i Binaryen 120.':'Uno/Nano: Node.js 22+, Arduino CLI 1.3.1.'}</li><li>{s3?<>Postavi alate prema README pa pokreni <b>Pokreni.cmd</b></>:<>Jednom pokreni <b>Pripremi.cmd</b>, a zatim <b>Pokreni.cmd</b></>} (Linux/macOS: uputa u README).</li><li>Kopiraj ispisanu vezu u polje. Povezivanje otvara lokalnu karticu; ostavi je otvorenu.</li></ol>
         <form onSubmit={e=>{e.preventDefault();try{compiler.connect(link);setLink('');}catch(err){setStatus((err as Error).message);}}} className="compiler-pair">
           <label htmlFor="compiler-link">Veza iz prozora prevoditelja</label><input id="compiler-link" type="password" autoComplete="off" placeholder="http://127.0.0.1:8765/#…" value={link} onChange={e=>setLink(e.target.value)} required disabled={busy}/><button disabled={busy||!link.trim()||compiler.connection==='connecting'}>Poveži prevoditelj</button>
         </form>

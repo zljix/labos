@@ -1,3 +1,4 @@
+import {appAsset} from '../platform/assets';
 import { useEffect, useState } from 'react';
 import type { Project } from '../project/model';
 import { getLesson, lessons, readWork, type LessonWork } from './catalog';
@@ -15,7 +16,7 @@ export function LessonCatalog({open,busy,openUrs,initialTarget,reviewClass}:{ope
     <div className="lesson-cards">{lessons.map(l=><button className="lesson-card" key={l.id} onClick={()=>open(l.id)} disabled={busy}>
       <span className="lesson-number">{String(l.number).padStart(2,'0')}</span><span><strong>{l.title}</strong><small>{l.goal}</small><em>{l.minutes} · upute, zadatak i provjera</em></span><span aria-hidden="true">›</span>
     </button>)}</div>
-    <details className="teacher-reference"><summary>Nastavnički uzorci i priprema pilota</summary><p>Uzorci otvaraju zaseban riješeni projekt za pripremu nastave. Učenički projekt ostaje sačuvan. Uzorci su dostupni u ovoj lokalnoj beti, bez odvojenih korisničkih uloga.</p><div className="lesson-inline-actions">{lessons.map(l=><button key={l.id} disabled={busy} onClick={()=>open(l.id,true)}>V{l.number} · uzorak</button>)}</div><a href="/pilot.html" target="_blank" rel="noreferrer">Otvori obrazac za stvarni pilot ↗</a></details></>}
+    <details className="teacher-reference"><summary>Nastavnički uzorci i priprema pilota</summary><p>Uzorci otvaraju zaseban riješeni projekt za pripremu nastave. Učenički projekt ostaje sačuvan. Uzorci su dostupni u ovoj lokalnoj beti, bez odvojenih korisničkih uloga.</p><div className="lesson-inline-actions">{lessons.map(l=><button key={l.id} disabled={busy} onClick={()=>open(l.id,true)}>V{l.number} · uzorak</button>)}</div><a href={appAsset('pilot.html')} target="_blank" rel="noreferrer">Otvori obrazac za stvarni pilot ↗</a></details></>}
   </div>;
 }
 interface Props {

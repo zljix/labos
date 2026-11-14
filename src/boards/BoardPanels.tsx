@@ -1,3 +1,4 @@
+import {appAsset} from '../platform/assets';
 import {useState} from 'react';
 import {BOARDS,S3,UNO,getBoard,languageName,type BoardId,type Language} from './profiles';
 import {SUPPORT_CATALOG,componentSupport,statusName} from './support';
@@ -40,7 +41,7 @@ export function SupportMatrix({board,language}:{board:BoardId;language:Language}
   const target:UrsTarget=selected===S3?(lang==='micropython'?'micropython':'s3-cpp'):selected===UNO?'uno':'nano';
   return <div className="support-matrix"><p>Status vrijedi za odabranu pločicu, jezik i navedeni upravljački program. Provjereno označava razvojne provjere funkcionalnog modela u objavljenom opsegu.</p>
     <div className="matrix-filters"><label>Pločica<select value={selected} onChange={e=>setSelected(e.target.value as BoardId)}>{Object.values(BOARDS).map(b=><option key={b.id} value={b.id}>{b.title}</option>)}</select></label><label>Jezik<select value={lang} onChange={e=>setLang(e.target.value as Language)}><option value="micropython">MicroPython</option><option value="arduino-cpp">Arduino C/C++</option></select></label><label>Pronađi komponentu<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="npr. BMP280, motor, TFT…"/></label></div>
-    <p><a href="/urs-podrska.csv" download>Preuzmi cijelu matricu · četiri izvršna cilja · CSV</a></p>
+    <p><a href={appAsset('urs-podrska.csv')} download>Preuzmi cijelu matricu · četiri izvršna cilja · CSV</a></p>
     <div className="matrix-scroll"><table><thead><tr><th>Komponenta</th><th>Status</th><th>Upravljački program, opseg i vježbe</th></tr></thead><tbody>{SUPPORT_CATALOG.filter(i=>(i.title+' '+i.group).toLocaleLowerCase('hr').includes(query.toLocaleLowerCase('hr'))).map(item=>{const support=componentSupport(item,selected,lang),valid=!(selected!==S3&&lang==='micropython');return <tr key={item.id}><td><b>{item.title}</b><small>{item.group}</small></td><td><span className={`support-status ${support.status}`}>{statusName[support.status]}</span></td><td>{item.driver}<small>{support.detail}</small>{valid&&<small>Vježbe: {exerciseCoverage(item,target).join(', ')||'Otvorena stavka'}. Podloga: {supportEvidence(item,target)}</small>}</td></tr>;})}</tbody></table></div>
     <details><summary>Otvorene stavke i uvjeti stabilne inačice</summary><ul>{supportOpenTasks.map(t=><li key={t}>{t}</li>)}</ul></details>
     <p>Status vrijedi samo za navedeni profil, driver i način rada. Moduli na 5 V koriste izričito označene carrier izvedbe; provjeri stvarni adapter. Matrica i razvojne provjere ne zamjenjuju učenički pilot.</p>

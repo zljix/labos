@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { APP_BUILD } from './assets';
+import { APP_BUILD, APP_BASE, appAsset } from './assets';
 
 export interface PackageStatus { ready: boolean; build: string; version: string; count: number; bytes: number }
 export interface OfflineState {
@@ -48,7 +48,7 @@ async function start() {
     else void inspect();
   });
   try {
-    registration = await navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' });
+    registration = await navigator.serviceWorker.register(appAsset('sw.js'), { scope: APP_BASE, updateViaCache: 'none' });
     const watch = () => {
       const installing = registration?.installing;
       if (!installing) return;

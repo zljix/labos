@@ -4,6 +4,16 @@
 
 Interaktivni laboratorij na hrvatskom jeziku za ESP32-S3, Arduino Uno R3 i Nano classic, s MicroPython i Arduino C++ programiranjem. Repozitorij sadrži izvorni kod, testove, dokumentaciju, upravljačke programe, licence i već izgrađenu aplikaciju u `dist/`.
 
+## Web aplikacija na GitHub Pagesu
+
+Web adresa: **https://zljix.github.io/labos/**. Za otvaranje web izdanja nisu potrebni Node.js ni lokalni poslužitelj. Projekti se spremaju u pregledniku; ZIP/JSON izvoz služi za prijenos i predaju.
+
+GitHub Pages uključi u **Settings → Pages → Source: GitHub Actions**. Workflow `.github/workflows/pages.yml` gradi aplikaciju, provjerava sve resurse i offline rad na putanji repozitorija te objavljuje samo izgrađeni `dist/`. Pokreće se pri promjenama na `main` i ručno kroz Actions. Za lokalnu provjeru takve izgradnje koristi `npm run build:pages` i `npm run test:pages`. Obični `npm run build` zadržava korijenske putanje za lokalni poslužitelj. `LAB_BASE_PATH` omogućuje drugu putanju repozitorija.
+
+MicroPython i priloženi prevedeni Arduino primjeri izvršavaju se u pregledniku. Izmijenjeni Arduino C++ program i dalje traži postojeći lokalni razvojni most. GitHub Pages ne pokreće PHP/MySQL: registracija, prijava i središnje bodovanje pripadaju zasebnom školskom poslužitelju.
+
+Izgrađena aplikacija u `dist/` u ovoj početnoj snimci ostaje lokalni paket 0.12.7; Pages za svaku objavu iznova gradi aktualni izvorni kod s putanjom `/labos/`.
+
 ## Brzo pokretanje gotove aplikacije
 
 Potreban je **Node.js 22 ili noviji**. Preuzmi cijeli repozitorij kroz **Code → Download ZIP** i raspakiraj ga ili ga kloniraj:
