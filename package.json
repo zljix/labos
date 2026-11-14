@@ -1,6 +1,6 @@
 {
   "name": "esp32-micropython-lab",
-  "version": "0.12.7-beta.1",
+  "version": "0.12.8-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -53,6 +53,7 @@
     "test:i2c-levels": "node --import tsx --test verification/i2c-levels.test.ts",
     "test:class-review": "node --import tsx --test verification/class-review.test.ts",
     "build:pages": "node scripts/build-pages.mjs",
+    "test:routing": "node --import tsx --test verification/routing.test.ts",
     "test:pages": "node --test verification/pages.test.mjs"
   },
   "dependencies": {

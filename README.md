@@ -1,8 +1,16 @@
 # ESP32 MicroPython Lab
 
-**0.12.7-beta.1 · etapa 22I · 14. studenoga 2026.**
+**0.12.8-beta.1 · dorada shema · 14. studenoga 2026.**
 
 Interaktivni laboratorij na hrvatskom jeziku za ESP32-S3, Arduino Uno R3 i Nano classic, s MicroPython i Arduino C++ programiranjem. Repozitorij sadrži izvorni kod, testove, dokumentaciju, upravljačke programe, licence i već izgrađenu aplikaciju u `dist/`.
+
+## Putanje vodiča · 0.12.8
+
+Automatski vodiči dobivaju zasebne kanale, zaobilaze tijela komponenti i ostaju na izvornim priključcima. Preostala križanja imaju mostić; presjek crte ne stvara električni spoj. Breadboard ostaje dostupan za prepojke.
+
+Za staru shemu s ručnim zavojima pritisni **Uredi vodove** iznad radne površine. Gumb zamjenjuje ručne putanje automatskima; izmjena se može poništiti strelicom **Poništi**. Ručne putanje inače ostaju sačuvane. Ako su komponente preblizu ili se preklapaju pa nema prolaza, prikazuje se poruka za razmicanje. **Prilagodi** obuhvaća i vanjske putanje vodiča.
+
+Provjere: `npm run test:routing` provjerava odvojene dionice na sva tri profila pločice, ručne putanje, zakretanje/pomicanje, električnu topologiju, mostiće i blokirane prolaze.
 
 ## Web aplikacija na GitHub Pagesu
 
@@ -12,7 +20,7 @@ GitHub Pages uključi u **Settings → Pages → Source: GitHub Actions**. Workf
 
 MicroPython i priloženi prevedeni Arduino primjeri izvršavaju se u pregledniku. Izmijenjeni Arduino C++ program i dalje traži postojeći lokalni razvojni most. GitHub Pages ne pokreće PHP/MySQL: registracija, prijava i središnje bodovanje pripadaju zasebnom školskom poslužitelju.
 
-Izgrađena aplikacija u `dist/` u ovoj početnoj snimci ostaje lokalni paket 0.12.7; Pages za svaku objavu iznova gradi aktualni izvorni kod s putanjom `/labos/`.
+Izgrađena aplikacija u `dist/` prati izdanje 0.12.8 za lokalno pokretanje. Pages za svaku objavu iznova gradi aktualni izvorni kod s putanjom `/labos/`.
 
 ## Brzo pokretanje gotove aplikacije
 

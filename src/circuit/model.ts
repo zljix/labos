@@ -229,10 +229,10 @@ export function parseCircuit(v:unknown,expectedBoard?:BoardId):ProjectCircuit{
 }
 export function demoCircuit():Circuit{
  const c=emptyCircuit();c.components.push(makePart("breadboard",390,130,"bb"),makePart("resistor",460,55,"r1"),makePart("led",1130,150,"led1"),makePart("button",1140,390,"sw1"),makePart("potentiometer",790,600,"pot1"));
- const ep=(component:string,pin:string):Endpoint=>({component,pin});const add=(a:string,p:string,b:string,q:string,color:string,points:Point[]=[])=>c.wires.push({id:`w${c.wires.length+1}`,from:ep(a,p),to:ep(b,q),color,points});
- add("esp32","J1.1","bb","tp1",COLORS[1],[{x:330,y:140},{x:330,y:165}]);add("esp32","J1.22","bb","tn1",COLORS[2],[{x:320,y:560},{x:320,y:185}]);
- add("esp32","J1.4","r1","1",COLORS[0],[{x:330,y:200},{x:330,y:90}]);add("r1","2","bb","a8",COLORS[0],[{x:640,y:90},{x:640,y:230}]);
- add("bb","e8","led1","A",COLORS[0],[{x:1120,y:310},{x:1120,y:250}]);add("led1","K","bb","tn30",COLORS[2],[{x:1240,y:250},{x:1240,y:185}]);add("bb","tn15","bb","tn16",COLORS[2]);
- add("esp32","J1.5","sw1","A1",COLORS[3],[{x:345,y:220},{x:345,y:580},{x:1110,y:580},{x:1110,y:410}]);add("sw1","B1","bb","tn29",COLORS[2],[{x:1300,y:410},{x:1300,y:185}]);
- add("pot1","1","bb","tp2",COLORS[1],[{x:760,y:710},{x:760,y:550},{x:370,y:550},{x:370,y:165}]);add("pot1","3","bb","tn28",COLORS[2],[{x:940,y:710},{x:940,y:570},{x:1330,y:570},{x:1330,y:185}]);add("pot1","2","esp32","J3.4",COLORS[4],[{x:860,y:750},{x:300,y:750},{x:300,y:200}]);return c;
+ const ep=(component:string,pin:string):Endpoint=>({component,pin});const add=(a:string,p:string,b:string,q:string,color:string)=>c.wires.push({id:`w${c.wires.length+1}`,from:ep(a,p),to:ep(b,q),color,points:[]});
+ add("esp32","J1.1","bb","tp1",COLORS[1]);add("esp32","J1.22","bb","tn1",COLORS[2]);
+ add("esp32","J1.4","r1","1",COLORS[0]);add("r1","2","bb","a8",COLORS[0]);
+ add("bb","e8","led1","A",COLORS[0]);add("led1","K","bb","tn30",COLORS[2]);add("bb","tn15","bb","tn16",COLORS[2]);
+ add("esp32","J1.5","sw1","A1",COLORS[3]);add("sw1","B1","bb","tn29",COLORS[2]);
+ add("pot1","1","bb","tp2",COLORS[1]);add("pot1","3","bb","tn28",COLORS[2]);add("pot1","2","esp32","J3.4",COLORS[4]);return c;
 }

@@ -24,6 +24,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Provjeri raspored vodiča
+        run: npm run test:routing
       - name: Izgradi laboratorij za putanju repozitorija
         run: npm run build:pages
         env:
