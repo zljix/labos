@@ -628,7 +628,7 @@ export default function App() {
     <div className="app-shell">
       <a className="skip-link" href="#workspace">Prijeđi na radno područje</a>
       <header className="topbar">
-        <a href="/" className="brand" aria-label="ESP32 MicroPython Lab">
+        <a href={appAsset('')} className="brand" aria-label="ESP32 MicroPython Lab">
           <span className="brand-icon">
             <Icon name="chip" size={23} />
           </span>
