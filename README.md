@@ -1,3 +1,11 @@
+## Putanje vodiča · 0.12.9-beta.1
+
+Prikaz preuzima pristup iz izvornog `Fritzing Optimizer/lib/optimizer/router.mjs` i `custom.mjs`: A* najprije traži slobodne putanje, zauzeti kanali postaju prepreke, a neuspjeli raspored pokušava se drugim redoslijedom. Zaštita obuhvaća i slobodne rupice breadboarda. Izvorni priključci, električne mreže, položaji komponenti i ručni zavoji ostaju sačuvani.
+
+Preostala križanja imaju mostić na ravnoj dionici ili stvarni prekid crte uz zavoj i bliska križanja. Odabirom vodiča ističu se oba njegova priključka, a ostali vodiči prigušuju. Nepronađena putanja prikazuje se isprekidano uz objašnjenje. „Uredi vodove” ponovno raspoređuje sve vodiče, uz Poništi.
+
+Provjera: testovi raspoređivanja na ESP32-S3, Uno i Nano, slobodne rupice i zakrenuti BB60, ručne putanje, očuvanje električnih mreža, mostići i prekidi. Složen sklop s fiksnim položajima može zadržati križanja; pretraživanje je ograničeno i ne dokazuje globalni optimum. [Detalji dorade](docs/wiring-0.12.9.md).
+
 # ESP32 MicroPython Lab
 
 **0.12.8-beta.1 · dorada shema · 14. studenoga 2026.**
@@ -20,7 +28,7 @@ GitHub Pages uključi u **Settings → Pages → Source: GitHub Actions**. Workf
 
 MicroPython i priloženi prevedeni Arduino primjeri izvršavaju se u pregledniku. Izmijenjeni Arduino C++ program i dalje traži postojeći lokalni razvojni most. GitHub Pages ne pokreće PHP/MySQL: registracija, prijava i središnje bodovanje pripadaju zasebnom školskom poslužitelju.
 
-Izgrađena aplikacija u `dist/` prati izdanje 0.12.8 za lokalno pokretanje. Pages za svaku objavu iznova gradi aktualni izvorni kod s putanjom `/labos/`.
+Izgrađena aplikacija u `dist/` prati izdanje 0.12.9 za lokalno pokretanje. Pages za svaku objavu iznova gradi aktualni izvorni kod s putanjom `/labos/`.
 
 ## Brzo pokretanje gotove aplikacije
 

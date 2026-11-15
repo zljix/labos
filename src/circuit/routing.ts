@@ -2,7 +2,7 @@ import {keyOf,partInfo,terminalMap,wirePoints,worldPoint,type Circuit,type Part,
 
 // Routing changes drawing geometry only. Electrical connections always use the
 // original endpoint IDs, including when two paths cross on the screen.
-const EPS=1e-5,LANE=12,CLEARANCE=12,INF=Number.POSITIVE_INFINITY;
+const EPS=1e-5,LANE=12,CLEARANCE=12,PIN_CLEARANCE=6,TRACE_CLEARANCE=8,INF=Number.POSITIVE_INFINITY;
 type Rect={left:number;right:number;top:number;bottom:number};
 type Segment={a:Point;b:Point;wire:Wire};
 type Port={terminal:Terminal;point:Point};
@@ -59,16 +59,29 @@ function intersection(a:Point,b:Point,c:Point,d:Point):{point?:Point;overlap?:nu
 function sharedPin(w:Wire,v:Wire,p:Point,map:Map<string,Terminal>):boolean {
  return [w.from,w.to].some(a=>[v.from,v.to].some(b=>keyOf(a)===keyOf(b)&&map.has(keyOf(a))&&equal(map.get(keyOf(a))!,p)));
 }
-function edgeCost(a:Point,b:Point,rects:Rect[],used:Segment[],w:Wire,map:Map<string,Terminal>):number {
- if(rects.some(r=>hitsRect(a,b,r)))return INF;
+// Cache obstacle slices: a BB60 has 840 holes, but only a few intersect a
+// particular row or column of the visibility grid.
+function obstacleChecker(rects:Rect[]) {
+ const rows=new Map<number,Rect[]>(),columns=new Map<number,Rect[]>();
+ return (a:Point,b:Point)=>{
+  const horizontal=Math.abs(a.y-b.y)<EPS,vertical=Math.abs(a.x-b.x)<EPS;
+  if(!horizontal&&!vertical)return rects.some(r=>hitsRect(a,b,r));
+  const cache=horizontal?rows:columns,key=horizontal?a.y:a.x;
+  let slice=cache.get(key);
+  if(!slice){slice=rects.filter(r=>horizontal?key>r.top+EPS&&key<r.bottom-EPS:key>r.left+EPS&&key<r.right-EPS);cache.set(key,slice);}
+  return slice.some(r=>hitsRect(a,b,r));
+ };
+}
+function edgeCost(a:Point,b:Point,hitsObstacle:(a:Point,b:Point)=>boolean,used:Segment[],w:Wire,map:Map<string,Terminal>,strict:boolean,separate:boolean):number {
+ if(hitsObstacle(a,b))return INF;
  let cost=distance(a,b);
  for(const s of used){
   const hit=intersection(a,b,s.a,s.b);
   if(hit.overlap)return INF;
-  if(hit.point&&!sharedPin(w,s.wire,hit.point,map))cost+=2400;
+  if(hit.point&&!sharedPin(w,s.wire,hit.point,map)){if(strict)return INF;cost+=2400;}
   // Keep parallel traces visibly apart, including paths just off the grid.
-  if(Math.abs(a.y-b.y)<EPS&&Math.abs(s.a.y-s.b.y)<EPS){const gap=Math.abs(a.y-s.a.y);if(gap>EPS&&gap<LANE-EPS&&Math.min(Math.max(a.x,b.x),Math.max(s.a.x,s.b.x))-Math.max(Math.min(a.x,b.x),Math.min(s.a.x,s.b.x))>EPS)cost+=(LANE-gap)*120;}
-  if(Math.abs(a.x-b.x)<EPS&&Math.abs(s.a.x-s.b.x)<EPS){const gap=Math.abs(a.x-s.a.x);if(gap>EPS&&gap<LANE-EPS&&Math.min(Math.max(a.y,b.y),Math.max(s.a.y,s.b.y))-Math.max(Math.min(a.y,b.y),Math.min(s.a.y,s.b.y))>EPS)cost+=(LANE-gap)*120;}
+  if(Math.abs(a.y-b.y)<EPS&&Math.abs(s.a.y-s.b.y)<EPS){const gap=Math.abs(a.y-s.a.y);if(gap>EPS&&gap<LANE-EPS&&Math.min(Math.max(a.x,b.x),Math.max(s.a.x,s.b.x))-Math.max(Math.min(a.x,b.x),Math.min(s.a.x,s.b.x))>EPS){if(separate&&gap<TRACE_CLEARANCE-EPS)return INF;cost+=(LANE-gap)*120;}}
+  if(Math.abs(a.x-b.x)<EPS&&Math.abs(s.a.x-s.b.x)<EPS){const gap=Math.abs(a.x-s.a.x);if(gap>EPS&&gap<LANE-EPS&&Math.min(Math.max(a.y,b.y),Math.max(s.a.y,s.b.y))-Math.max(Math.min(a.y,b.y),Math.min(s.a.y,s.b.y))>EPS){if(separate&&gap<TRACE_CLEARANCE-EPS)return INF;cost+=(LANE-gap)*120;}}
  }return cost;
 }
 class Heap {
@@ -76,16 +89,19 @@ class Heap {
  push(id:number,score:number){const a=this.values;let i=a.length;a.push({id,score});while(i){const p=(i-1)>>1;if(a[p].score<=score)break;a[i]=a[p];i=p;}a[i]={id,score};}
  pop(){const a=this.values,first=a[0],last=a.pop()!;if(a.length){let i=0;while(i*2+1<a.length){let child=i*2+1;if(child+1<a.length&&a[child+1].score<a[child].score)child++;if(a[child].score>=last.score)break;a[i]=a[child];i=child;}a[i]=last;}return first;}
 }
-function route(start:Point,end:Point,rects:Rect[],used:Segment[],wire:Wire,map:Map<string,Terminal>,ports:Point[]):Point[]|null {
+function route(start:Point,end:Point,rects:Rect[],used:Segment[],wire:Wire,map:Map<string,Terminal>,ports:Point[],strict:boolean,channels:Point[]=[],separate=strict):Point[]|null {
+ const hitsObstacle=obstacleChecker(rects);
+ if(hitsObstacle(start,start)||hitsObstacle(end,end))return null;
  const xs=new Set<number>([start.x,end.x]),ys=new Set<number>([start.y,end.y]);
  const add=(p:Point)=>{xs.add(p.x);ys.add(p.y);};
  for(const p of ports){add(p);add({x:p.x-LANE,y:p.y-LANE});add({x:p.x+LANE,y:p.y+LANE});}
+ for(const p of channels)add(p);
  for(const r of rects){add({x:r.left,y:r.top});add({x:r.right,y:r.bottom});}
  for(const s of used)for(const p of [s.a,s.b]){add({x:p.x-LANE,y:p.y-LANE});add({x:p.x+LANE,y:p.y+LANE});}
  const xv=[...xs].sort((a,b)=>a-b),yv=[...ys].sort((a,b)=>a-b);
  // Include an outer channel, even for circuits with no solid component body.
  xv.unshift(xv[0]-LANE*3);xv.push(xv[xv.length-1]+LANE*3);yv.unshift(yv[0]-LANE*3);yv.push(yv[yv.length-1]+LANE*3);
- const score=(points:Point[])=>{let cost=Math.max(0,points.length-2)*18;for(let i=1;i<points.length;i++)cost+=edgeCost(points[i-1],points[i],rects,used,wire,map);return cost;};
+ const score=(points:Point[])=>{let cost=Math.max(0,points.length-2)*18;for(let i=1;i<points.length;i++)cost+=edgeCost(points[i-1],points[i],hitsObstacle,used,wire,map,strict,separate);return cost;};
  let best:Point[]|null=null,bestCost=INF;
  const consider=(points:Point[])=>{const p=simplifyPath(points),cost=score(p);if(cost<bestCost){best=p;bestCost=cost;}};
  for(const x of xv)consider([start,{x,y:start.y},{x,y:end.y},end]);
@@ -104,7 +120,7 @@ function route(start:Point,end:Point,rects:Rect[],used:Segment[],wire:Wire,map:M
   for(const [nx,ny,nd]of [[x-1,y,1],[x+1,y,1],[x,y-1,2],[x,y+1,2]]){
    if(nx<0||ny<0||nx>=width||ny>=height)continue;
    const next=ny*width+nx,key=node<next?`${node}:${next}`:`${next}:${node}`;
-   let edge=cache.get(key);if(edge===undefined){edge=edgeCost(p,{x:xv[nx],y:yv[ny]},rects,used,wire,map);cache.set(key,edge);}
+   let edge=cache.get(key);if(edge===undefined){edge=edgeCost(p,{x:xv[nx],y:yv[ny]},hitsObstacle,used,wire,map,strict,separate);cache.set(key,edge);}
    const cost=costs[id]+edge+(dir&&dir!==nd?18:0),state=next*3+nd;
    if(cost>=costs[state])continue;costs[state]=cost;previous[state]=id;heap.push(state,cost+manhattan({x:xv[nx],y:yv[ny]},end));
   }
@@ -114,7 +130,7 @@ function route(start:Point,end:Point,rects:Rect[],used:Segment[],wire:Wire,map:M
  return simplifyPath(points.reverse());
 }
 
-export function routeCircuit(c:Circuit,map=terminalMap(c)):WireLayout {
+function routeAttempt(c:Circuit,map:Map<string,Terminal>,order?:string[],allowCrossings=false,preferFree=false):WireLayout {
  const paths=new Map<string,Point[]>(),blocked:string[]=[],parts=new Map(c.components.map(p=>[p.id,p])),groups=new Map<string,{wire:Wire;other:Terminal}[]>(),ports=new Map<string,Port>();
  const bodies=c.components.filter(p=>p.kind!=='breadboard').map(p=>inflate(partBounds(p),CLEARANCE));
  for(const w of c.wires)for(const [a,b]of [[w.from,w.to],[w.to,w.from]]){const t=map.get(keyOf(a)),other=map.get(keyOf(b));if(!t||!other)continue;const key=keyOf(a);groups.set(key,[...(groups.get(key)??[]),{wire:w,other}]);}
@@ -126,18 +142,23 @@ export function routeCircuit(c:Circuit,map=terminalMap(c)):WireLayout {
  // Explicit user bends stay fixed and reserve their channels first.
  for(const w of c.wires.filter(w=>w.points.length)){const pts=wirePoints(w,map);paths.set(w.id,pts);used.push(...segments(pts,w));}
  const automatic=c.wires.filter(w=>!w.points.length).sort((a,b)=>{
+  if(order)return order.indexOf(a.id)-order.indexOf(b.id);
   const length=(w:Wire)=>{const x=map.get(keyOf(w.from)),y=map.get(keyOf(w.to));return x&&y?manhattan(x,y):0;};return length(a)-length(b)||a.id.localeCompare(b.id);
  });
- const allPorts=[...ports.values()].map(p=>p.point);
+ const allPorts=[...ports.values()].map(p=>p.point),channels:Point[]=[];
+ // Preserve fine escape channels beside closely spaced board headers.
+ if(allowCrossings&&!preferFree)for(const key of groups.keys()){const t=map.get(key)!;channels.push({x:t.x-5,y:t.y-5},{x:t.x+5,y:t.y+5});}
  const leads=automatic.flatMap(w=>[w.from,w.to].flatMap(e=>{const p=ports.get(`${w.id}|${keyOf(e)}`);return p?segments([p.terminal,p.point],w):[];}));
  for(const w of automatic){
   const a=ports.get(`${w.id}|${keyOf(w.from)}`),b=ports.get(`${w.id}|${keyOf(w.to)}`);
   if(!a||!b){paths.set(w.id,[]);blocked.push(w.id);continue;}
-  const rects=[...bodies,...[...groups.keys()].filter(k=>k!==keyOf(w.from)&&k!==keyOf(w.to)).map(k=>{const t=map.get(k)!;return {left:t.x-5,right:t.x+5,top:t.y-5,bottom:t.y+5};})];
-  const middle=route(a.point,b.point,rects,[...used,...leads.filter(s=>s.wire.id!==w.id)],w,map,allPorts);
+  // Unused pins and holes must stay readable too, as in Fritzing Optimizer.
+  const rects=[...bodies,...[...map.entries()].filter(([k,t])=>k!==keyOf(w.from)&&k!==keyOf(w.to)&&!bodies.some(r=>t.x-PIN_CLEARANCE>=r.left&&t.x+PIN_CLEARANCE<=r.right&&t.y-PIN_CLEARANCE>=r.top&&t.y+PIN_CLEARANCE<=r.bottom)).map(([,t])=>({left:t.x-PIN_CLEARANCE,right:t.x+PIN_CLEARANCE,top:t.y-PIN_CLEARANCE,bottom:t.y+PIN_CLEARANCE}))];
+  const reserved=[...used,...leads.filter(s=>s.wire.id!==w.id)];
+  const middle=(preferFree?route(a.point,b.point,rects,reserved,w,map,allPorts,true):null)??route(a.point,b.point,rects,reserved,w,map,allPorts,!allowCrossings,channels,!allowCrossings||preferFree);
   const pts=simplifyPath([a.terminal,...(middle??[a.point,b.point]),b.terminal]);
   if(!middle)blocked.push(w.id);
-  paths.set(w.id,pts);used.push(...segments(pts,w));
+  paths.set(w.id,pts);if(middle)used.push(...segments(pts,w));
  }
  const crossings:WireCrossing[]=[];let overlaps=0;
  for(let i=0;i<c.wires.length;i++)for(let j=0;j<i;j++){
@@ -150,18 +171,51 @@ export function routeCircuit(c:Circuit,map=terminalMap(c)):WireLayout {
  return {paths,crossings,overlaps,blocked};
 }
 
+export function routeCircuit(c:Circuit,map=terminalMap(c)):WireLayout {
+ // Reserve complete paths, then retry with the obstructed wires first. This
+ // transfers the Optimizer's occupancy + order search without changing pins,
+ // component placement, manually authored bends or the electrical graph.
+ let best=routeAttempt(c,map);
+ const quality=(l:WireLayout)=>[l.blocked.length,l.overlaps,l.crossings.length,[...l.paths.values()].reduce((sum,p)=>sum+Math.max(0,p.length-2)*18+p.slice(1).reduce((n,b,i)=>n+distance(p[i],b),0),0)];
+ const better=(candidate:WireLayout)=>{const a=quality(candidate),b=quality(best);for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
+ const ids=c.wires.filter(w=>!w.points.length).map(w=>w.id);
+ if(best.blocked.length){
+  const conflicts=new Map(ids.map(id=>[id,0]));
+  for(const id of best.blocked)conflicts.set(id,1000);
+  for(const hit of best.crossings)for(const id of [hit.first,hit.second])conflicts.set(id,(conflicts.get(id)??0)+1);
+  const first=[...ids].sort((a,b)=>(conflicts.get(b)??0)-(conflicts.get(a)??0)||a.localeCompare(b));
+  for(const order of [first,[...ids].reverse()]){const candidate=routeAttempt(c,map,order);if(better(candidate))best=candidate;if(!best.blocked.length)break;}
+  if(best.blocked.length)for(const order of [undefined,[...ids].reverse(),first]){const candidate=routeAttempt(c,map,order,true);if(better(candidate))best=candidate;if(!best.blocked.length&&!best.crossings.length)break;}
+  if(best.crossings.length&&ids.length<=12){const candidate=routeAttempt(c,map,[...ids].reverse(),true,true);if(better(candidate))best=candidate;}
+ }
+ return best;
+}
+
 // A small bridge makes unavoidable crossings distinct from a connector joint.
 export function routedPath(points:Point[],crossings:Point[]=[]):string {
- if(!points.length)return '';
- let d=`M${points[0].x} ${points[0].y}`;
- for(let i=1;i<points.length;i++){
-  const a=points[i-1],b=points[i],length=distance(a,b),u={x:(b.x-a.x)/length,y:(b.y-a.y)/length};
-  if(length<EPS)continue;
-  let last=0;
-  const hits=crossings.filter(p=>Math.abs(cross(difference(p,a),difference(b,a)))<EPS).map(p=>({p,t:(p.x-a.x)*u.x+(p.y-a.y)*u.y})).filter(h=>h.t>8&&h.t<length-8).sort((a,b)=>a.t-b.t);
-  for(const {p,t}of hits){if(t-last<14)continue;d+=` L${p.x-u.x*6} ${p.y-u.y*6} Q${p.x+u.y*12} ${p.y-u.x*12} ${p.x+u.x*6} ${p.y+u.y*6}`;last=t;}
-  d+=` L${b.x} ${b.y}`;
- }return d;
+ const path=simplifyPath(points);if(!path.length)return '';
+ const lengths=[0];for(let i=1;i<path.length;i++)lengths.push(lengths[i-1]+distance(path[i-1],path[i]));
+ const total=lengths.at(-1)!;
+ const at=(t:number):Point=>{for(let i=1;i<path.length;i++)if(t<=lengths[i]+EPS){const a=path[i-1],b=path[i],f=(t-lengths[i-1])/(lengths[i]-lengths[i-1]);return {x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};}return path.at(-1)!;};
+ const hits:number[]=[];
+ for(let i=1;i<path.length;i++)for(const p of crossings){const a=path[i-1],b=path[i],ab=difference(b,a),length=lengths[i]-lengths[i-1],offset=((p.x-a.x)*ab.x+(p.y-a.y)*ab.y)/length;
+  if(Math.abs(cross(difference(p,a),ab))<EPS&&offset>=-EPS&&offset<=length+EPS){const t=lengths[i-1]+offset;if(t>EPS&&t<total-EPS&&!hits.some(h=>Math.abs(h-t)<EPS))hits.push(t);}
+ }
+ const events:{start:number;end:number;center:number;bridge:boolean}[]=[];
+ for(const t of hits.sort((a,b)=>a-b)){
+  const event={start:Math.max(0,t-6),end:Math.min(total,t+6),center:t,bridge:lengths.every(s=>Math.abs(s-t)>8)};
+  const last=events.at(-1);if(last&&event.start<=last.end+2){last.end=Math.max(last.end,event.end);last.bridge=false;}else events.push(event);
+ }
+ let d=`M${path[0].x} ${path[0].y}`,cursor=0;
+ const drawTo=(end:number)=>{for(let i=1;i<path.length;i++)if(lengths[i]>cursor+EPS&&lengths[i]<end-EPS)d+=` L${path[i].x} ${path[i].y}`;const p=at(end);d+=` L${p.x} ${p.y}`;cursor=end;};
+ for(const event of events){drawTo(event.start);const end=at(event.end);
+  if(event.bridge){const p=at(event.center),start=at(event.start),dx=(end.x-start.x)/12,dy=(end.y-start.y)/12;d+=` Q${p.x+dy*12} ${p.y-dx*12} ${end.x} ${end.y}`;}
+  // At a bend or adjacent crossing an arc would imply a false T-junction.
+  // A real gap remains clear in either paint order and for diagonal manual paths.
+  else d+=` M${end.x} ${end.y}`;
+  cursor=event.end;
+ }
+ if(cursor<total)drawTo(total);return d;
 }
 
 export function layoutBounds(c:Circuit,layout:WireLayout) {
