@@ -36,3 +36,14 @@ Pokušaj novog automatiziranog pregledničkog prijelaza nije izvršen: lokalni C
 Automatska provjera odobrenja odbila je slanje na javnu granu `main`, navodeći izostanak izričitog odobrenja objave u trenutačnom zahtjevu i nedovršenu pregledničku provjeru. Objavu ne treba smatrati obavljenom: ponovni dohvat `package.json` iz GitHuba potvrđuje `0.15.3-beta.1`. Sljedeći korak nakon odobrenja je objava spremljenog commita, praćenje Pages izgradnje te provjera javnog izdanja i sigurnog ažuriranja. Repozitorij `labosv2` nije mijenjan.
 
 Završno su ponovno prošle i provjere projekata/spojeva (29), usmjeravanja vodiča (13), radnog prostora (2) i školske sinkronizacije (15): ukupno 89/89 ciljanih automatiziranih provjera u ovom nastavku.
+
+
+## Javna objava nakon odobrenja
+
+Korisnik je u nastavku izričito odobrio objavu. Commit `ba1e501b93141b3f4ea7021d2260e99798c88da9` objavljen je u `main`; njegovo stablo `56d3972aea17d3276748c27274b7ec80615cf571` potpuno odgovara lokalno provjerenom stablu. [GitHub Pages provjere, izgradnja i objava](https://github.com/zljix/labos/actions/runs/44373930802) završile su uspješno. Javni manifest potvrđuje `0.15.4-beta.1`, paket `4e0e5e233f9f2f0e` i putanju `/labos/`.
+
+U javnom pregledniku otvorena je 0.15.4-beta.1 s postojećim projektom „Tipkalo upravlja LED-icom”. Tekst izvora prije i poslije potpuno je jednak (366 znakova). Program se izvodi: otpušteno tipkalo daje LED 0 %, pritisnuto LED 88 % i odgovarajući ispis. Prošla je i zasebna provjera Workera, MicroPython WASM-a, GPIO-a, vremenske stanke i framebufa.
+
+Offline instalacija u udaljenom testnom pregledniku i dalje nije potvrđena: upis je ponovno odbijen zbog kvote. Prvi pokušaj uz staru karticu bio je blokiran i nepotvrđenom verzijom kartice; nakon zatvaranja stare spremljene kartice ponovljeni pokušaj prijavio je ograničenje prostora bez te dodatne blokade. Nije prikazana potvrda oslobađanja zastarjelih paketa niti uspješne aktivacije 25E. Aktivni stari paket i projekt ostali su sačuvani. Ovo ne dokazuje isto ograničenje na korisnikovu uređaju i nije razlog za opće brisanje podataka stranice.
+
+[Školska regresija i paket](https://github.com/zljix/labos/actions/runs/44373930731) još su u tijeku pri završnoj provjeri. Web objava nije potvrda završetka te regresije, uspješne offline nadogradnje u ovom pregledniku ni stvarnog školskog pilota. Repozitorij `labosv2` nije mijenjan.
