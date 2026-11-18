@@ -33,3 +33,13 @@ Izvor i izgrađeni paket spremljeni su na grani `codex/25g-component-properties`
 Otvoren je [nacrt PR-a #1](https://github.com/zljix/labos/pull/1). Pokušaj objave na `main` odbila je automatska provjera uz obrazloženje da zahtjev „Nastavi” ne predstavlja dovoljno izričito odobrenje promjene zadane grane. Odbijanje nije zaobiđeno. Ponovni dohvat potvrđuje da `main` ostaje na `ed5b6102ae467646ab38c7a2f5aa0826a93ca3bd` (0.15.5-beta.1).
 
 Sljedeći korak nakon odobrenja objave: ponovno provjeriti vrhove grana, spojiti pripremljene izmjene, pratiti Pages izgradnju do završetka i potvrditi posluženo izdanje. Ne ponavljati već uspješne lokalne provjere bez promjene koda ili novog nalaza. Ograničenja pregledničkog prihvata i školskog pilota ostaju zasebno otvorena.
+
+## Javna objava nakon odobrenja
+
+Korisnik je u nastavku izričito odobrio objavu porukom „Objavi”. PR #1 spojen je u `main` commitom `16232d7951bdba2ad1be20fc353974bd39c37155`. Stablo `312d548a1ba2370b4223bb3afc3ec7c955d1a49b` jednako je prethodno pripremljenom stablu.
+
+[GitHub Pages provjere, izgradnja i objava](https://github.com/zljix/labos/actions/runs/44410804762) završile su uspješno. Javni manifest na `https://zljix.github.io/labos/offline-package.json` potvrđuje verziju `0.15.6-beta.1`, paket `a91dd771fcebfeba` i osnovnu putanju `/labos/`. HTTP dohvat sa zahtjevom bez predmemorije potvrdio je duljinu i SHA-256 javnog `index.html` te njegovih glavnih JS/CSS datoteka prema manifestu.
+
+Prošla je i [CI provjera sučelja i metodičkih uputa](https://github.com/zljix/labos/actions/runs/44410621224), uključujući projektnu i školsku sinkronizaciju, obje izgradnje te pripadajuće offline provjere. [Opsežna školska regresija novog izdanja](https://github.com/zljix/labos/actions/runs/44410804800) pri završnom pregledu čeka izvršavanje; njezin uspjeh nije potvrđen.
+
+Objava i HTTP provjera nisu preglednički offline test. Čista predmemorija, vizualni prihvat na malom zaslonu, stvarni uređaji i učenički pilot ostaju otvoreni kako je navedeno iznad. Repozitorij `labosv2` nije mijenjan.
