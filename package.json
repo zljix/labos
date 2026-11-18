@@ -1,6 +1,6 @@
 {
   "name": "esp32-micropython-lab",
-  "version": "0.15.2-beta.1",
+  "version": "0.15.3-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -115,7 +115,8 @@
     "test:school-compiler": "node --import tsx --test verification/school-compiler.test.ts",
     "test:school-compiler-api": "node --import tsx --test verification/school-compiler-api.test.mjs",
     "test:compiler-ui": "node scripts/test-compiler-ui.mjs",
-    "test:workspace": "node --import tsx scripts/build-school-catalog.ts && node scripts/test-workspace.mjs"
+    "test:workspace": "node --import tsx scripts/build-school-catalog.ts && node scripts/test-workspace.mjs",
+    "test:offline-ui": "node scripts/test-offline-ui.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -143,8 +144,8 @@
     "vite": "8.3.8"
   },
   "labosRelease": {
-    "stage": "25C",
-    "title": "Čitljiviji sklop i kôd",
+    "stage": "25D",
+    "title": "Pouzdanije offline ažuriranje",
     "acceptance": "technical-preview"
   }
 }

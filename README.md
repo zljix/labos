@@ -1,4 +1,12 @@
-# Novo izdanje: 0.15.1-beta.1 · 25B
+# Novo izdanje: 0.15.3-beta.1 · 25D
+
+Napredak provjere offline paketa, konkretne poruke pogrešaka i ograničeno ponavljanje neuspjelog preuzimanja uz obveznu SHA-256 provjeru. [Opseg i provjere](docs/STAGE25D_OFFLINE.md).
+
+## Prethodno izdanje 0.15.2-beta.1 · 25C
+
+Čitljiviji sklop i kôd, prelamanje redaka i poboljšano dodavanje komponenti. [Opseg i provjere](docs/STAGE25C_CITLJIVOST.md).
+
+## Prethodno izdanje 0.15.1-beta.1 · 25B
 
 Prilagodljiv raspored sklopa i kôda, upute uz rad, sklopiv izlaz, pregled varijante prije otvaranja i sažeti školski statusi. [Opseg i provjere uređenja](docs/STAGE25B_RADNI_PROSTOR.md).
 

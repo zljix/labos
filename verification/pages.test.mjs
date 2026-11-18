@@ -13,9 +13,11 @@ const sw = readFileSync(resolve(dist, 'sw.js'), 'utf8');
 const local = url => resolve(dist, new URL(url, origin).pathname.slice(base.length) || 'index.html');
 const cachePrefix = 'esp32-micropython-lab-app-' + encodeURIComponent(base) + '-';
 
-function worker({ corrupt = false, windows = [origin + base], prior = new Map() } = {}) {
+function worker({ corrupt = false, transient = false, windows = [origin + base], prior = new Map() } = {}) {
   const handlers = {}, records = prior;
   let online = true, requests = 0, skipped = false;
+  const reports = [], requested = [];
+  let concurrent = 0, peak = 0;
   const key = value => typeof value === 'string' ? value : value.url;
   const caches = {
     async open(name) {
@@ -32,20 +34,24 @@ function worker({ corrupt = false, windows = [origin + base], prior = new Map() 
   };
   const fetch = async request => {
     ++requests;
+    requested.push(key(request));
+    concurrent++; peak = Math.max(peak, concurrent);
+    await new Promise(resolve => setImmediate(resolve));
+    concurrent--;
     if (!online) throw Error('offline');
-    const path = new URL(key(request)).pathname;
+    const url = new URL(key(request)), path = url.pathname;
     assert(path.startsWith(base), 'offline install escaped the project prefix');
-    return new Response(corrupt && path.endsWith('.wasm') ? 'wrong bytes' : readFileSync(local(path)));
+    return new Response((corrupt || (transient && !url.search)) && path.endsWith('.wasm') ? 'wrong bytes' : readFileSync(local(path)));
   };
   vm.runInNewContext(sw, {
     self: { location: { origin }, addEventListener: (name, fn) => { handlers[name] = fn; },
       skipWaiting: async () => { skipped = true; }, clients: {
-        claim: async () => {}, matchAll: async () => windows.map(url => ({ url })),
+        claim: async () => {}, matchAll: async () => windows.map(url => ({ url, postMessage: message => reports.push({ url, message }) })),
       } },
     caches, fetch, crypto: webcrypto, URL, Request, Response, Uint8Array, Set, Error,
   });
   return {
-    records, get requests() { return requests; }, get skipped() { return skipped; },
+    records, reports, requested, get peak() { return peak; }, get requests() { return requests; }, get skipped() { return skipped; },
     offline() { online = false; },
     async install() { let pending; handlers.install({ waitUntil: p => { pending = p; } }); await pending; },
     async message(type) {
@@ -121,6 +127,36 @@ test('the installed Pages worker reopens the entire application without network 
 test('corrupt Pages runtime cannot be advertised as offline ready', async () => {
   const env = worker({ corrupt: true });
   await assert.rejects(env.install());
+  assert.equal((await env.message('LAB_STATUS')).ready, false);
+  assert(env.reports.some(r => r.message.type === 'LAB_PACKAGE_ERROR' && r.message.message.includes('.wasm')));
+  assert(!env.reports.some(r => r.message.type === 'LAB_PACKAGE_READY'));
+  assert(env.requested.length <= manifest.files.length + 4, 'bounded failure must not retry the entire package');
+});
+
+test('a stale resource is retried with its expected hash and cached at the canonical URL', async () => {
+  const env = worker({ transient: true, windows: [origin + base, origin + '/other/'] });
+  await env.install();
+  assert(env.peak > 1 && env.peak <= 4, 'at most four parallel downloads');
+  const retry = env.requested.filter(url => url.includes('?'));
+  const wasm = manifest.files.filter(file => file.url.endsWith('.wasm'));
+  assert.equal(retry.length, wasm.length);
+  for (const file of wasm) assert(retry.includes(origin + file.url + '?lab-sha256=' + file.sha256));
+  assert.equal((await env.message('LAB_STATUS')).ready, true);
+  assert(env.reports.every(r => r.url.startsWith(origin + base)), 'other applications must not receive progress');
+  const progress = env.reports.filter(r => r.message.type === 'LAB_PACKAGE_PROGRESS').map(r => r.message.completed);
+  assert.equal(progress[0], 0); assert.equal(progress.at(-1), manifest.files.length);
+  assert.deepEqual(progress, [...progress].sort((a, b) => a - b));
+  env.offline();
+  for (const file of wasm) assert.equal(createHash('sha256').update(Buffer.from(await (await env.request(file.url)).arrayBuffer())).digest('hex'), file.sha256);
+});
+
+test('failed upgrade leaves a previous package intact and never activates itself', async () => {
+  const priorName = cachePrefix + 'previous', path = origin + base + 'app/previous/machine.py';
+  const prior = new Map([[priorName, new Map([[path, new Response('# retained')]])]]);
+  const env = worker({ corrupt: true, prior });
+  await assert.rejects(env.install());
+  assert.equal(await prior.get(priorName).get(path).text(), '# retained');
+  assert.equal(env.skipped, false);
   assert.equal((await env.message('LAB_STATUS')).ready, false);
 });
 

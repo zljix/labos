@@ -6,6 +6,9 @@ export interface OfflineState {
   phase: 'development' | 'unavailable' | 'preparing' | 'ready' | 'error';
   message: string; online: boolean; update: boolean; checking: boolean;
   package?: PackageStatus;
+  downloading?: boolean;
+  progress?: { completed: number; total: number; version: string };
+  downloadError?: string;
 }
 export function workerMessage<T>(worker: ServiceWorker, type: string, timeout = 6000): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -47,16 +50,27 @@ async function start() {
     if (reloadRequested) { reloadRequested = false; location.reload(); }
     else void inspect();
   });
+  navigator.serviceWorker.addEventListener('message', event => {
+    const source = event.source as ServiceWorker | null, data = event.data;
+    if (source?.scriptURL !== new URL(appAsset('sw.js'), location.href).href) return;
+    if (data?.type === 'LAB_PACKAGE_PROGRESS' && Number.isInteger(data.completed) && Number.isInteger(data.total) && data.total > 0 && data.completed >= 0 && data.completed <= data.total && typeof data.version === 'string') {
+      publish({ downloading: true, progress: { completed: data.completed, total: data.total, version: data.version }, downloadError: undefined });
+    }
+    if (data?.type === 'LAB_PACKAGE_ERROR' && typeof data.message === 'string') publish({ downloading: false, progress: undefined, downloadError: data.message });
+    if (data?.type === 'LAB_PACKAGE_READY') publish({ downloading: false, progress: undefined, downloadError: undefined });
+  });
   try {
     registration = await navigator.serviceWorker.register(appAsset('sw.js'), { scope: APP_BASE, updateViaCache: 'none' });
     const watch = () => {
       const installing = registration?.installing;
       if (!installing) return;
+      publish({ downloading: true, downloadError: undefined, progress: undefined });
       if (!registration?.active) publish({ phase: 'preparing', message: 'Preuzimanje i provjera offline paketa…' });
       installing.addEventListener('statechange', () => {
-        if (installing.state === 'installed') publish({ update: !!registration?.waiting && !!registration?.active });
+        if (installing.state === 'installed') publish({ update: !!registration?.waiting && !!registration?.active, downloading: false, progress: undefined });
         if (installing.state === 'activated') void inspect();
         if (installing.state === 'redundant') {
+          publish({ downloading: false, progress: undefined });
           if (!registration?.active) publish({ phase: 'error', message: 'Offline paket nije preuzet u cijelosti. Provjeri vezu i ponovi preuzimanje.' });
           else publish({ message: 'Nova verzija nije pripremljena. Trenutačni paket ostaje dostupan.' });
         }

@@ -26,6 +26,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:school-pilot
+      - run: npm run test:offline-ui
       - name: Provjeri raspored vodiča
         run: npm run test:routing
       - name: Izgradi laboratorij za putanju repozitorija

@@ -8,24 +8,68 @@ const urls = new Set(PACKAGE.files.map(file => file.url));
 const origin = self.location.origin;
 const key = path => new URL(path, origin).href;
 
+async function report(type, detail = {}) {
+  // A diagnostic failure must never make a verified installation fail.
+  try {
+    for (const client of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) {
+      if (client.url && new URL(client.url).pathname.startsWith(BASE)) client.postMessage?.({ type, build: PACKAGE.build, version: PACKAGE.version, ...detail });
+    }
+  } catch { /* The page may already have closed. */ }
+}
+async function verifiedResponse(file) {
+  let failure;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const url = new URL(key(file.url));
+    // An explicit content key on retry avoids a stale intermediary response.
+    // The bytes are still verified and stored under the canonical offline URL.
+    if (attempt) url.searchParams.set('lab-sha256', file.sha256);
+    try {
+      const response = await fetch(url.href, { cache: 'reload', credentials: 'same-origin', redirect: 'error' });
+      if (!response.ok || response.redirected || (response.url && response.url !== url.href)) throw Error('Datoteka nije dostupna (HTTP ' + response.status + ').');
+      const bytes = await response.clone().arrayBuffer();
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
+      if (hash !== file.sha256 || bytes.byteLength !== file.bytes) throw Error('Sadržaj ne odgovara očekivanoj verziji.');
+      return response;
+    } catch (error) { failure = error; }
+  }
+  throw Error(file.url + ': ' + String(failure?.message ?? failure));
+}
+let preparation;
 async function prepare() {
+  if (preparation) return preparation;
+  preparation = preparePackage().finally(() => { preparation = undefined; });
+  return preparation;
+}
+async function preparePackage() {
   // Verify every byte before making the package eligible for offline use.
   // Redirects to an authentication page or an HTML fallback never become code.
-  const responses = [];
-  for (const file of PACKAGE.files) {
-    const response = await fetch(key(file.url), { cache: 'reload', credentials: 'same-origin', redirect: 'error' });
-    if (!response.ok || response.redirected || (response.url && response.url !== key(file.url))) throw Error('Datoteka paketa nije dostupna: ' + file.url);
-    const bytes = await response.clone().arrayBuffer();
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
-    if (hash !== file.sha256 || bytes.byteLength !== file.bytes) throw Error('Sadržaj paketa ne odgovara verziji: ' + file.url);
-    responses.push([file.url, response]);
+  const responses = new Array(PACKAGE.files.length);
+  let next = 0, completed = 0, failure;
+  await report('LAB_PACKAGE_PROGRESS', { completed, total: PACKAGE.files.length });
+  // Bounded concurrency shortens a large package install on high-latency links.
+  // Drain every request before reporting failure; no partial package is ready.
+  await Promise.all(Array.from({ length: Math.min(4, PACKAGE.files.length) }, async () => {
+    while (!failure && next < PACKAGE.files.length) {
+      const index = next++, file = PACKAGE.files[index];
+      try {
+        responses[index] = [file.url, await verifiedResponse(file)];
+        completed++;
+        if (completed % 8 === 0 || completed === PACKAGE.files.length) await report('LAB_PACKAGE_PROGRESS', { completed, total: PACKAGE.files.length });
+      } catch (error) { failure ??= error; }
+    }
+  }));
+  if (failure) {
+    await report('LAB_PACKAGE_ERROR', { message: failure.message });
+    throw failure;
   }
-  const cache = await caches.open(CACHE);
   try {
+    const cache = await caches.open(CACHE);
     for (const [path, response] of responses) await cache.put(key(path), response);
     await cache.put(key(MARKER), new Response(JSON.stringify({ build: PACKAGE.build }), { headers: { 'Content-Type': 'application/json' } }));
+    await report('LAB_PACKAGE_READY');
   } catch (error) {
-    await caches.delete(CACHE);
+    await caches.delete(CACHE).catch(() => {});
+    await report('LAB_PACKAGE_ERROR', { message: 'Paket nije spremljen u preglednik: ' + String(error?.message ?? error) });
     throw error;
   }
 }

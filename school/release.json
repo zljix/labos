@@ -1,6 +1,6 @@
 {
-  "version": "0.15.2-beta.1",
-  "stage": "25C",
-  "title": "Čitljiviji sklop i kôd",
+  "version": "0.15.3-beta.1",
+  "stage": "25D",
+  "title": "Pouzdanije offline ažuriranje",
   "acceptance": "technical-preview"
 }
