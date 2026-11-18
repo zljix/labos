@@ -47,16 +47,17 @@ export function compileCircuit(circuit: Circuit, backend: "micropython"|"avr" = 
   };
 }
 export type SimulationConfig = ReturnType<typeof compileCircuit>;
-export interface OpticalReading {index:number;timeMs:number;readTimeMs:number;red:number;ir:number|null}
-export interface OpticalFrame {powered:boolean;mode:number;shutdown:boolean;resetting:boolean;sampleRate:number;average:number;effectiveRate:number;count:number;writePointer:number;readPointer:number;overflow:number;dropped:number;generated:number;status:number;ledRed:number;ledIR:number;resolution:number;last:OpticalReading|null;readings:OpticalReading[];reason:string}
+export interface OpticalReading {index:number;timeMs:number;readTimeMs:number;red:number;ir:number|null;transaction?:number|null}
+export interface OpticalFrame {powered:boolean;mode:number;shutdown:boolean;resetting:boolean;sampleRate:number;average:number;effectiveRate:number;count:number;writePointer:number;readPointer:number;overflow:number;dropped:number;generated:number;status:number;ledRed:number;ledIR:number;resolution:number;last:OpticalReading|null;readings:OpticalReading[];transfers?:{transaction:number;operation:string;register:number;bytes:number[];length:number;sequence:number;timeMs:number;mode:number;shutdown:boolean;count:number;generated:number;dropped:number}[];reason:string}
 export interface SimulationFrame {
   i2cLevelShifters?:Record<string,{powered:boolean;lv:number|null;hv:number|null;reason:string;channels:{name:string;lowVolts:number|null;highVolts:number|null;pulledLow:boolean;idle:boolean}[]}>;
   levelShifters?:Record<string,{powered:boolean;direction:string|null;vcca:number|null;vccb:number|null;dir:number|null;reason:string;channels:{input:string;output:string;inputVolts:number|null;outputVolts:number|null;level:number|null;reason:string}[]}>;
   radios?:Record<string,{powered:boolean;ce:boolean;channel:number;rateMbps:number;crcBytes:number;addressWidth:number;status:number;txFifo:number;rxFifo:number;retries:number;lost:number;received:number;sent:number;failed:number;mode:string;reason:string}>;
   optical?:Record<string,OpticalFrame>;
-  sdCards?:Record<string,{powered:boolean;inserted:boolean;writeProtected:boolean;initialized:boolean;sectors:number;dirtyBlocks:number;reads:number;writes:number;errors:number;revision:number;state:import('./model').SDState;files:{name:string;size:number;cluster:number}[];volumeError:string;reason:string;trace:{timeUs:number;operation:string;value:number;result:string}[]}>;
-  rtcDevices?:Record<string,{mainPower:boolean;battery:boolean;rtcMainPower:boolean;retained:boolean;valid:boolean;halted:boolean;writeProtected:boolean;iso:string|null;day:number;reason:string;received:number;errors:number;state:import('./model').RTCState;trace:{timeUs:number;operation:string;value?:number}[]}>;
+  sdCards?:Record<string,{powered:boolean;inserted:boolean;writeProtected:boolean;initialized:boolean;sectors:number;dirtyBlocks:number;reads:number;writes:number;errors:number;revision:number;state:import('./model').SDState;files:{name:string;size:number;cluster:number}[];volumeError:string;reason:string;trace:{timeUs:number;operation:string;value:number;result:string}[];transfers?:{timeUs:number;operation:string;lba:number;bytes:number[]}[]}>;
+  rtcDevices?:Record<string,{mainPower:boolean;battery:boolean;rtcMainPower:boolean;retained:boolean;valid:boolean;halted:boolean;writeProtected:boolean;iso:string|null;day:number;reason:string;received:number;errors:number;state:import('./model').RTCState;trace:{timeUs:number;operation:string;value?:number}[];transfers?:{timeUs:number;operation:string;command:number;bytes:number[];accepted:boolean}[]}>;
   touches?:Record<string,{powered:boolean;down:boolean;x:number;y:number;pressure:number;irq:number|null;pd:number;raw:{x:number;y:number;z1:number;z2:number};last:{channel?:string;value?:number;command?:number};conversions:number;reason:string}>;
+  touchReadings?:{component:string;sample:number;timeMs:number;channel:string;value:number}[];
   tfts?:Record<string,{kind:'tft';width:number;height:number;powered:boolean;on:boolean;sleep:boolean;backlight:boolean;madctl:number;format:number;written:number;window:number[];pixels:number[];reason:string}>;
   spiBytes?:number;
   spiTrace?:{timeUs:number;device:string;operation:string;value:number;result:string}[];
@@ -75,7 +76,7 @@ export interface SimulationFrame {
   clockProfile?:string;
   infrared?:Record<string,{kind:'receiver'|'remote'|'transmitter';powered:boolean;channel:number;level:number;busy:boolean;blocked:boolean;presses:number;carrierHz:number|null;transitions:number;trace:{timeUs:number;level:number}[]}>;
   encoders?:Record<string,{powered:boolean;position:number;targetPosition:number;clk:number;dt:number;sw:number;busy:boolean;transitions:number;volts:Record<string,number|null>;trace:{timeUs:number;clk:number;dt:number;sw:number;position:number}[]}>;
-  oneWireDevices?:Record<string,{powered:boolean;rom:string;temperature:number;resolution:number;busy:boolean;sample:number;scratchpad:number[];reason:string;fault:string;trace:{timeUs:number;operation:string;value?:number}[]}>;
+  oneWireDevices?:Record<string,{powered:boolean;rom:string;temperature:number;resolution:number;busy:boolean;sample:number;scratchpad:number[];reason:string;fault:string;trace:{timeUs:number;operation:string;value?:number}[];readings?:{timeUs:number;sample:number;busy:boolean;convertedAtUs:number;resolution:number;temperature:number;valid:boolean}[]}>;
   timedSensors?:Record<string,{powered:boolean;sample:number;temperature:number;humidity:number;bytes:number[];reason:string;transmitting:boolean;fault:string;trace:{atUs:number;durationUs:number;level:number}[]}>;
   analogInputs?:Record<string,{powered:boolean;active?:boolean;volts:Record<string,number|null>;resistance?:number}>;
   avr?:{memory?:{staticBytes:number;lowestSP:number;minFreeToStatic:number};cycles:number;clockHz:number;uartBaud:number;rxPending:number;busTrace:{kind:string;operation:string;value?:number;result?:string;timeUs:number}[]};

@@ -3,6 +3,7 @@ name: Objavi laboratorij na GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore: ['docs/**']
   workflow_dispatch:
 
 permissions:
@@ -24,6 +25,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: npm run test:school-pilot
       - name: Provjeri raspored vodiča
         run: npm run test:routing
       - name: Izgradi laboratorij za putanju repozitorija

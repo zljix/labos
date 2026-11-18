@@ -12,5 +12,5 @@
     "resolveJsonModule": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "verification/*.test.ts", "vite.config.ts"]
+  "include": ["src", "verification/*.test.ts", "school/grader/*.ts", "vite.config.ts"]
 }

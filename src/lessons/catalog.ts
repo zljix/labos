@@ -1,3 +1,4 @@
+import {identityText,STUDENT_NAME_LIMIT,CLASS_NAME_LIMIT} from '../project/identity';
 import { basicExamples, exampleCircuit } from '../circuit/examples';
 import { peripheralCircuit, peripheralExample } from '../circuit/peripheralExamples';
 import { newProject, type Project } from '../project/model';
@@ -30,6 +31,7 @@ export const lessons: Lesson[] = [
       {term:'GPIO izlaz',explanation:'Program na priključku postavlja 0 ili 1, u ovom modelu približno 0 V ili 3,3 V. Broj 4 u Pin(4) znači GPIO4, a ne četvrti fizički priključak.'},
       {term:'LED i otpornik',explanation:'LED provodi od anode A prema katodi K. Serijski otpornik ograničava struju; sam GPIO bez zatvorene veze prema masi ne može upaliti LED.'},
       {term:'Period i čekanje',explanation:'sleep_ms(250) čeka 250 milisekundi. Period je zbroj trajanja uključenja i isključenja: 250 + 750 = 1000 ms. Čekanje ne mijenja već postavljeno stanje pina.'},
+      {term:'Frekvencija',explanation:'Frekvencija f govori koliko se punih ciklusa ponovi u sekundi: f = 1/T, gdje period T izražavamo u sekundama. Za T = 1000 ms = 1 s vrijedi f = 1/1 = 1 Hz. Za T = 500 ms = 0,5 s vrijedi f = 2 Hz.'},
     ], connections:ledConnections,
     guided:'led.on()\nsleep_ms(500)  # stanje ostaje ukljuceno tijekom cekanja\nled.off()\nsleep_ms(500)',
     steps:[
@@ -65,6 +67,7 @@ export const lessons: Lesson[] = [
       {term:'Potenciometar',explanation:'Izvodi 1 i 3 su krajevi otporne staze. Izvod 2 je pomični klizač koji daje dio napona između 3,3 V i mase.'},
       {term:'ADC',explanation:'Analogno-digitalni pretvornik napon pretvara u broj. read_u16() vraća 0–65535. Ovaj model ima 12-bitnu kvantizaciju i uz ATTN_11DB zasićuje na približno 3,1 V.'},
       {term:'PWM',explanation:'Izlaz brzo izmjenjuje 0 i 1. Radni omjer je udio vremena uključenja; duty_u16(0) znači 0 %, a duty_u16(65535) 100 %. Frekvencija od 1000 Hz nije svjetlina.'},
+      {term:'Primjer pretvorbe',explanation:'Na 50 % klizača napon je približno 3,3 × 0,5 = 1,65 V. Uz zasićenje ADC-a na 3,1 V udio je 1,65 / 3,1 ≈ 0,532. Zato read_u16 daje približno 1,65 / 3,1 × 65535 ≈ 34882, a jednak duty_u16 oko 53,2 %. Kvantizacija može malo promijeniti broj.'},
     ], connections:[...ledConnections,['Potenciometar 1 / 2 / 3','3V3 / GPIO1 (ADC) / GND.']],
     guided:'adc = ADC(Pin(1), atten=ADC.ATTN_11DB)\nled = PWM(Pin(4), freq=1000, duty_u16=0)\nvrijednost = adc.read_u16()\n# Jednaki rasponi 0–65535 omogucuju izravno zadavanje duty_u16.',
     steps:['Pokreni kôd i mijenjaj položaj potenciometra 0 / 25 / 50 / 100 %. Prati ADC u konzoli.','Dopuni petlju tako da očitanje određuje led.duty_u16(...). Svjetlina treba rasti postupno.','Provjeri rad pa u Mjerenjima usporedi PWM pri 50 % i 100 % klizača.','Objasni zašto sredina klizača daje oko 53 % PWM-a u ovom modelu, a ne točno 50 %.'],
@@ -110,7 +113,7 @@ export function readWork(p:Project):LessonWork|undefined {
   try {
     const v=JSON.parse(p.files[WORK_FILE]??'null'), l=getLesson(v?.lessonId);
     if(!l||v.format!=='esp32-lab-work'||v.version!==1||v.lessonVersion!==LESSON_VERSION||
-      typeof v.student!=='string'||v.student.length>100||typeof v.group!=='string'||v.group.length>40||
+      !identityText(v.student,STUDENT_NAME_LIMIT)||!identityText(v.group,CLASS_NAME_LIMIT)||
       !Array.isArray(v.answers)||v.answers.length!==l.questions.length||v.answers.some((x:unknown)=>typeof x!=='string'||x.length>2000)) return;
     return {format:'esp32-lab-work',version:1,lessonId:l.id,lessonVersion:1,student:v.student,group:v.group,answers:[...v.answers]};
   } catch { return; }

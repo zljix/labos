@@ -209,9 +209,21 @@ export function createCircuitHost(send, config) {
   function status() { return diagnose(); }
   const timedPins=c.gpios.filter(g=>[...(c.timedSensors??[]),...(c.oneWireDevices??[])].some(d=>rootData().root(d.data)===rootData().root(g.net))).map(g=>g.pin);
   let timed,oneWire;
+  // In a passive DS18B20-only network the idle electrical solution depends on
+  // supply GPIOs, not time or DQ pulses (those pins are explicitly ignored).
+  // Reuse it only for that topology; mixed circuits keep the general solver.
+  const passiveOneWire=!!c.oneWireDevices?.length&&Object.entries(c).every(([key,value])=>
+    !Array.isArray(value)||!value.length||['nets','gpios','rails','referenceGrounds','resistors','oneWireDevices'].includes(key));
+  let oneWireIdleKey,oneWireIdleValue;
+  const oneWireIdleSolution=()=>{
+    if(!passiveOneWire)return solve(undefined,timedPins,true);
+    const key=JSON.stringify([...pins].filter(([id])=>!timedPins.includes(id)));
+    if(key!==oneWireIdleKey){oneWireIdleValue=solve(undefined,timedPins,true);oneWireIdleKey=key;}
+    return oneWireIdleValue;
+  };
   infrared=createInfrared({c,pins,gpioNet,rootData,idleSolution:()=>solve(undefined,[],false,true),clockUs});
   timed=createDHTBus({c,pins,gpioNet,rootData,idleSolution:()=>solve(undefined,timedPins,true),clockUs,logicVoltage});
-  oneWire=createOneWireBus({c,pins,gpioNet,rootData,idleSolution:()=>solve(undefined,timedPins,true),clockUs,logicVoltage});
+  oneWire=createOneWireBus({c,pins,gpioNet,rootData,idleSolution:oneWireIdleSolution,clockUs,logicVoltage});
   tm=createTM1637({c,pins,gpioNet,rootData,idleSolution:()=>solve(undefined,[],false,false,true),clockUs});
   rtc=createDS1302({c,pins,gpioNet,rootData,idleSolution:()=>solve(undefined,[],false,false,false,true),clockUs});
   const observeTimed=()=>{timed.observe();oneWire.observe();if(tm.observe())dirty=true;if(rtc.observe())dirty=true;};
@@ -273,7 +285,7 @@ export function createCircuitHost(send, config) {
       i2cLevelShifters:instant.i2cLevelShifters,
       leds:Object.fromEntries(c.leds.map(l=>[l.id,{brightness:faults.length?0:clamp(currents[l.id]/5,0,1),currentMa:faults.length?0:+currents[l.id].toFixed(4)}])),
       gpios:Object.fromEntries([...pins].map(([id,p])=>{const v=instant.volts[gpioNet.get(id)];return [id,{mode:adcPins.has(id)?'ADC':p.mode,volts:faults.length?null:v,level:faults.length||v===null?null:v<logicVoltage*.25?0:v>logicVoltage*.75?1:null,...(p.mode==='PWM'?{freq:p.freq,duty:p.duty}: {})}];})),
-      ...peripherals,radios:spiState.radios,sdCards:spiState.sdCards,rtcDevices:rtcState.rtcDevices,touches:spiState.touches,tfts:spiState.tfts,spiTrace:spiState.trace,spiBytes:spiState.count,steppers:stepperState.steppers,actuators:actuatorState.actuators,tmDisplays:tmState.tmDisplays,infrared:irState.infrared,encoders:encoderState.encoders,oneWireDevices:oneWireState.oneWireDevices,timedSensors:timedState.timedSensors,analogInputs:analogState.analogInputs,servos:Object.fromEntries((c.servos??[]).map(s=>[s.id,servoState(s,instant.volts)])),
+      ...peripherals,radios:spiState.radios,sdCards:spiState.sdCards,rtcDevices:rtcState.rtcDevices,touches:spiState.touches,touchReadings:spiState.touchReadings,tfts:spiState.tfts,spiTrace:spiState.trace,spiBytes:spiState.count,steppers:stepperState.steppers,actuators:actuatorState.actuators,tmDisplays:tmState.tmDisplays,infrared:irState.infrared,encoders:encoderState.encoders,oneWireDevices:oneWireState.oneWireDevices,timedSensors:timedState.timedSensors,analogInputs:analogState.analogInputs,servos:Object.fromEntries((c.servos??[]).map(s=>[s.id,servoState(s,instant.volts)])),
       diagnostics:[...faults,...levelWarnings,...rtcState.diagnostics,...spiState.diagnostics,...stepperState.diagnostics,...actuatorState.diagnostics,...tmState.diagnostics,...irState.diagnostics,...peripheralDiagnostics,...timedState.diagnostics,...oneWireState.diagnostics,...analogState.diagnostics,...encoderState.diagnostics,...adcFaults.values()]});
     if(!config.manualPublish&&Object.values(peripherals.displays).some(d=>d.kind==='lcd'&&d.powered&&d.on&&d.blink))blinkPending=setTimeout(publish,Math.max(10,500-now()%500));
     // Mechanical motion must remain visible even if the program sleeps and
@@ -322,7 +334,13 @@ export function createCircuitHost(send, config) {
     },
     nextTimedEdgeUs:nextEdge,
     timedStep(){dirty=true;},
-    busDrive(id,pin,low){if(low)busLow.set(id,pin);else busLow.delete(id);dirty=true;},
+    busDrive(id,pin,low){
+      // Releasing an already released slave output changes no electrical state.
+      // In mixed hardware/software I2C this also avoids solving the full network
+      // again for every unrelated GPIO edge while the hardware bus is enabled.
+      if(low?busLow.get(id)===pin:!busLow.has(id))return;
+      if(low)busLow.set(id,pin);else busLow.delete(id);dirty=true;
+    },
     capturePulse(pin,pulseUs,periodUs){pulses.set(pin,{pulseUs,periodUs,at:now()});},
     mode(id, output, pull=0, value=-1) {
       if(!gpioNet.has(id))return -2;
@@ -332,6 +350,22 @@ export function createCircuitHost(send, config) {
     },
     write(id,value) { const p=pins.get(id);if(!p||p.mode!=='OUT')return -2;if(p.value!==value){p.value=value;dirty=true;observeTimed();queue();}return status(); },
     read(id,pull=0) {const v=readValue(id,pull);if(clockDepth||irClock)advanceUs(1);return v;},
+    // Cycle backends sample external GPIOs at one instant. Their port modes
+    // are already synchronized; diagnose and solve that electrical state once.
+    readMany(requests) {
+      for(const [id,pull]of requests){
+        if(!gpioNet.has(id))continue;
+        const p=pins.get(id);
+        if(!p){pins.set(id,{mode:'IN',pull,value:0});queue();}
+        else if(p.mode==='IN'&&p.pull!==pull){p.pull=pull;queue();}
+      }
+      const healthy=status()>=0,volts=healthy?currentSolution().volts:[];
+      return requests.map(([id])=>{
+        if(!gpioNet.has(id)||!healthy)return -2;
+        const v=volts[gpioNet.get(id)];
+        return v===null?-1:v>logicVoltage+.3||v<-.3?-2:v<=logicVoltage*.25?0:v>=logicVoltage*.75?1:-3;
+      });
+    },
     adc(id,observe=true) {
       if(!gpioNet.has(id)||(config.adcPins?!config.adcPins.includes(id):id<1||id>20))return -1;
       if(observe)adcPins.add(id);

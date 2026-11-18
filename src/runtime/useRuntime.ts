@@ -1,3 +1,4 @@
+import {projectWithBuild} from './arduinoBuild';
 import {SDSessionMemory} from './sdState';
 import {RTCSessionMemory} from './rtcState';
 import { useEffect, useRef, useState } from "react";
@@ -34,7 +35,9 @@ export function useRuntime() {
     if (reset) { pressed.current = false; setButton(false); }
     setState("loading");setConsole("");setLed(false);setFrame([]);setSimulation(undefined);setLiveInputs({});setRunRevision(p.revision);
     try {
-      const snapshot = prepareRun(p);
+      const ready=await projectWithBuild(p);
+      if(ticket!==launch.current)return;
+      const snapshot = prepareRun(ready);
       setLiveInputs({...rtcMemory.current.prepare(p,snapshot.circuit),...sdMemory.current.prepare(p,snapshot.circuit)});
       const observe=(event:any)=>{
         if(ticket!==launch.current)return;
