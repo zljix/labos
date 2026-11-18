@@ -52,6 +52,18 @@ test('24Q circuit catalog, keyboard tabs, precise movement and action disclosure
  assert.equal(document.activeElement,tabs[0]);
  const picker=document.querySelector<HTMLSelectElement>('[aria-label="Odaberi element"]')!;
  await React.act(async()=>{picker.value='part:test-led';picker.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
+ const geometry=document.querySelector<HTMLDetailsElement>('.part-properties .advanced-position')!;
+ assert.equal(geometry.open,false);
+ assert(geometry.querySelector('[aria-label="Zakretanje"]'));
+ assert(!geometry.contains(document.querySelector('[aria-label="Boja LED"]')));
+ const projectBeforeMessage=JSON.stringify(saved);
+ const warning=document.querySelector<HTMLButtonElement>('.part-diagnostics button')!;
+ assert.match(warning.textContent!,/nepriključeni izvodi/);
+ await React.act(async()=>warning.click());
+ assert.equal(JSON.stringify(saved),projectBeforeMessage);
+ assert(document.querySelector('.terminal-properties'));
+ assert.match(document.querySelector('.circuit-hint')!.textContent!,/nepriključeni izvodi/);
+ await React.act(async()=>{picker.value='part:test-led';picker.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
  const x=document.querySelector<HTMLInputElement>('[aria-label="Položaj X komponente"]')!;
  await React.act(async()=>{x.value='740';x.dispatchEvent(new dom.window.FocusEvent('focusout',{bubbles:true}));});
  assert.equal(saved.components.find(p=>p.id==='test-led')?.x,740);
