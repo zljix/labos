@@ -26,8 +26,18 @@ Polazište: `e38636ff5dcbac2aa33e9bdd532c2988b393c8f4`, nastavak plana grafičko
 
 Stvarni iOS/Android dodir, projektor, učenički pilot i cjeloviti audit pristupačnosti ostaju otvoreni. Beta oznaka ostaje; tehnički prolaz nije potvrda nastavne primjenjivosti u svim uvjetima.
 
-## Stanje objave
+## Javna objava
 
-Izvedba i provjere sačuvane su u lokalnom commitu `754a23f0645e882759ff25c969dae19ca9f4f534`. Automatski pregled odobrenja odbio je `git push origin main`: zahtjev za nastavak dorade nije prihvaćen kao izričita dozvola za javnu objavu. Nije pokušavan drugi put objave. Udaljeni `main` nakon odbijanja i dalje je `e38636ff5dcbac2aa33e9bdd532c2988b393c8f4`.
+Korisnik je izričito odobrio objavu. Izvorni commit izdanja: `21a3511cd6638d18a3a1b22dc24250b178b82d56`. Stablo objavljenog izvora podudara se s lokalno provjerenim stablom (`e05ec226cb185593128547eb248c0c7cbe9e212e`).
 
-Za nastavak nakon izričitog odobrenja: provjeriti aktualni udaljeni main, objaviti pripremljene commitove bez prepisivanja tuđih izmjena, pratiti Pages provjeru te potvrditi stvarno posluženu verziju 0.15.2-beta.1. Lokalni pregled nove verzije je provjeren; javna objava nije provedena.
+[GitHub Pages izgradnja i objava](https://github.com/zljix/labos/actions/runs/44362368051) završile su uspješno. Javno posluženi `offline-package.json` potvrđuje verziju `0.15.2-beta.1` i paket `63813ed0e00f4247` na https://zljix.github.io/labos/ .
+
+[Cjelovita školska regresijska provjera](https://github.com/zljix/labos/actions/runs/44362367948) pokrenuta je za isti commit; pri ovoj potvrdi objave još je u tijeku. Njezin rezultat nije uključen u potvrdu 79 ciljanih provjera ni u potvrdu Pages objave.
+
+## Otvorena provjera offline nadogradnje
+
+U pregledniku sa starim paketom `0.15.1-beta.1` / `9856dc508d8fff58`, nakon provjere nadogradnje prikazana je poruka: „Nova verzija nije pripremljena. Trenutačni paket ostaje dostupan.” Ponovljeni pokušaj nije otklonio pogrešku. Postojeći projekt i predmemorija nisu brisani. Uspješna objava na Pagesu zato nije potvrda uspješnog prijelaza postojećih offline instalacija.
+
+Pokrenuta je provjera veličine i SHA-256 svih 205 javnih datoteka prema manifestu. Njezin rezultat nije dohvaćen jer je automatska provjera odobrenja daljnjeg čitanja rezultata bila blokirana limitom korištenja. Uzrok neuspješne instalacije ostaje nepotvrđen; nema dokaza da su sve javne datoteke dostupne s očekivanim sažetcima.
+
+Sljedeće: dovršiti provjeru javnih resursa, utvrditi uzrok instalacijske pogreške i ponoviti prijelaz sa starog paketa uz očuvanje projekta. Provjeriti konačni rezultat školske CI provjere 44362367948. Ne brisati korisničke podatke radi zaobilaženja pogreške.
