@@ -27,4 +27,5 @@ Prošle su TypeScript provjera, samostalna i Pages izgradnja. Lokalni Pages pake
 
 ## Provjera objave
 
-Potvrda javne objave i stvarnog prijelaza starije kartice dodaje se nakon izvršenja. Stvarni iOS/Android dodir, projektor i učenički pilot ostaju otvoreni. Beta oznaka se zadržava.
+Izdanje je pripremljeno, ali nije javno objavljeno. Automatska provjera odobrenja odbila je pomicanje grane main jer zahtjev „Nastavi” nije prihvaćen kao izričita dozvola za produkcijsku objavu. Izvor i provjere čuvaju se na grani `codex/25d-offline-update`. Stvarni prijelaz postojeće kartice na 25D zato još nije provjeren. Nakon odobrene objave treba provjeriti Pages postupak, javni manifest i nadogradnju 0.15.1-beta.1 uz očuvan kôd i izvođenje projekta. Potpuna školska CI provjera 25C (44362367948) pri završnoj provjeri još traje. Stvarni iOS/Android dodir, projektor i učenički pilot ostaju otvoreni. Beta oznaka se zadržava.
+
