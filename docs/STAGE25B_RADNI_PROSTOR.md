@@ -22,8 +22,17 @@ Polazište: `8ef91fdc9e6d05e8922f4ef407bf0892560b6b0a`, plan grafičkog uređenj
 - Završni sažetak predaje, bodovanje i prikazi ranijih rezultata: 5 testova. Sažetak predaje ponovljen je nakon generiranja kataloga i prolazi.
 - Novi UI testovi: pregled varijante bez otvaranja projekta, promjena cilja, očuvanje potvrđenih bodova/revizije u sažetku, vidljiva pogreška spremanja i zaključana predaja: 2 testa. Pokretanje: `npm run test:workspace`.
 - Raspoređivanje vodiča: 13 testova. Pages resursi i postojeće provjere pilotnog paketa: 14 testova.
+- Završna izgradnja samostalnog paketa i offline provjera: 8 testova. Ukupno je prošlo 394 ciljane lokalne provjere.
 - Ručno u pregledniku: obje teme, katalog i novi MicroPython projekt, upis odgovora, skrivanje/otvaranje uputa uz očuvan odgovor i viewBox sklopa, pomicanje razdjelnika tipkovnicom, namjerna ValueError i uspješno ponovno pokretanje nakon ispravka, otvaranje pripremljenog Uno C++ primjera.
 - Prikazi u okvirima 390 × 844, 768 × 1024, 1024 × 768, 1280 × 720 i 1366 × 768: nema vodoravnog prelijevanja cijelog dokumenta. Na mobitelu provjeren prijelaz Upute → Kôd s vidljivim sačuvanim odgovorom.
+
+## Javna objava
+
+Izvorni commit izdanja: `7c9ce3354b99c519d0e9d0077f0543b52734ce4e`. [GitHub Pages izgradnja i objava](https://github.com/zljix/labos/actions/runs/44313317368) završile su uspješno.
+
+Na [javnoj aplikaciji](https://zljix.github.io/labos/) potvrđena je oznaka `0.15.1-beta.1`. Provjeren je i prijelaz sa spremljene verzije `0.15.0-beta.1`: Status aplikacije → Provjeri novu verziju → Spremi i otvori novu verziju. Postojeći projekt ostao je sačuvan; njegovo MicroPython izvođenje, promjena tipkala i odziv LED-ice provjereni su nakon nadogradnje. Ne treba brisati podatke stranice.
+
+[Cjelovita školska regresijska provjera](https://github.com/zljix/labos/actions/runs/44313317331) pokrenuta je za isti izvorni commit. Pri predaji ovog zapisa još je trajala; njezin završni rezultat nije uključen u gornju potvrdu prolaza. Prethodno potpuno izvođenje tog postupka trajalo je oko 62 minute. Postupak uključuje PHP/MySQL, neovisno C++ prevođenje, bodovanje, predaju i pakiranje školskog izdanja.
 
 ## Granice prihvata
 
