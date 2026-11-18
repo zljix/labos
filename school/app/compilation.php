@@ -96,6 +96,8 @@ function claimCompile(\PDO $pdo,array $config): ?array {
         return ['id'=>(int)$r['id'],'lease'=>$lease,'project'=>json_decode($r['project'],true,32,JSON_THROW_ON_ERROR)];
     });
 }
+// Store result as validated JSON text: MySQL JSON reorders toolchain keys,
+// while the established browser artifact contract preserves their byte order.
 function completeCompile(\PDO $pdo,array $body): array {
     $result=$body['result']??null;
     if(!is_array($result)||!in_array($result['status']??'', ['compiled','compile_error','technical_error'],true))fail(422,'compile_result','Neispravan rezultat.');

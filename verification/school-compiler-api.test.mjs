@@ -45,7 +45,7 @@ test('25A real PHP/MySQL queue: isolation, idempotency, leases, limits and locke
  });
  await t.test('authorized attempt, locked submission, no work revision side effect',async()=>{
   const teacher=await f.make('compile.teacher','teacher');const c=(await ok(teacher.client.call('create-class',{name:'4.f',schoolYear:'2026/2027'}),201)).class;
-  await ok(f.admin.call('membership',{classId:c.id,userId:a.user.id,kind:'student',present:true}));
+  const csv='username;displayName\n'+a.user.username+';'+a.user.displayName;const plan=await ok(teacher.client.call('preview-students',{classId:c.id,csv}));await ok(teacher.client.call('import-students',{classId:c.id,csv,previewToken:plan.previewToken,linkExisting:true}));
   const task=(await ok(teacher.client.call('publish-task',{taskKey:'gpio/button',criteria:[{description:'Provjera',maxPoints:10}]}),201)).task;
   const assignment=(await ok(teacher.client.call('create-assignment',{classId:c.id,taskVersionId:task.id,target:'uno'}),201)).assignment;
   const work=await ok(a.client.call('begin-attempt',{assignmentId:assignment.id}));const p={...body(),attemptId:work.attempt.id,project:work.snapshot.project};
