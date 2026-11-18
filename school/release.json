@@ -1,6 +1,6 @@
 {
-  "version": "0.15.0-beta.1",
-  "stage": "25A",
-  "title": "Školski C++ prevoditelj",
+  "version": "0.15.1-beta.1",
+  "stage": "25B",
+  "title": "Pregledniji radni prostor",
   "acceptance": "technical-preview"
 }

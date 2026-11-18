@@ -1,8 +1,12 @@
-# Novo izdanje: 0.15.0-beta.1 · 25A
+# Novo izdanje: 0.15.1-beta.1 · 25B
+
+Prilagodljiv raspored sklopa i kôda, upute uz rad, sklopiv izlaz, pregled varijante prije otvaranja i sažeti školski statusi. [Opseg i provjere uređenja](docs/STAGE25B_RADNI_PROSTOR.md).
+
+## Prethodno izdanje 0.15.0-beta.1 · 25A
 
 Školski C++ prevoditelj za Uno, Nano i ESP32-S3, dostupan u repozitoriju **labos**. Upute: [STAGE25A_SKOLSKI_PREVODITELJ.md](docs/STAGE25A_SKOLSKI_PREVODITELJ.md). Školsko prevođenje zahtijeva konfiguriranu PHP/MySQL instalaciju i Linux radni proces; GitHub Pages ostaje statički laboratorij.
 
-# Labosv2 · školski laboratorij
+## Arhiva školskog laboratorija (24Q i ranije)
 
 **0.14.15-beta.1 · etapa 24Q · sučelje i upute po varijanti · objavljena web beta.**
 
