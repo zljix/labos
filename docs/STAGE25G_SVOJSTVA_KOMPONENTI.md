@@ -25,3 +25,11 @@ Razvojna stranica otvorena je s novom oznakom verzije, ali vizualni prihvat nije
 Kod i prethodno provjerene izgradnje ostaju nepromijenjeni. Izdanje zadržava status tehničke beta verzije; objava nije potvrda vizualnog prihvata ni stvarnog offline rada. Objavu i rezultat Pages provjera zabilježiti nakon dovršetka.
 
 Otvoreno: dopušten testni preglednik s očišćenom predmemorijom, svojstva i dijagnostika u obje teme i na malom zaslonu, hladno offline otvaranje, stvarni mobilni uređaji i učenički pilot. Opsežna školska regresija prethodnog izdanja 25F još je u tijeku pri pregledu; ne prikazivati je kao završenu.
+
+## Sačuvano za objavu
+
+Izvor i izgrađeni paket spremljeni su na grani `codex/25g-component-properties`, commit `88ef922745168d4594d8f6b14ec2afa32d53ec35`. Stablo `82e566b171ed2e0bcbe63e440a08743a32f969ab` potpuno odgovara lokalno pripremljenom izvoru i paketu.
+
+Otvoren je [nacrt PR-a #1](https://github.com/zljix/labos/pull/1). Pokušaj objave na `main` odbila je automatska provjera uz obrazloženje da zahtjev „Nastavi” ne predstavlja dovoljno izričito odobrenje promjene zadane grane. Odbijanje nije zaobiđeno. Ponovni dohvat potvrđuje da `main` ostaje na `ed5b6102ae467646ab38c7a2f5aa0826a93ca3bd` (0.15.5-beta.1).
+
+Sljedeći korak nakon odobrenja objave: ponovno provjeriti vrhove grana, spojiti pripremljene izmjene, pratiti Pages izgradnju do završetka i potvrditi posluženo izdanje. Ne ponavljati već uspješne lokalne provjere bez promjene koda ili novog nalaza. Ograničenja pregledničkog prihvata i školskog pilota ostaju zasebno otvorena.
