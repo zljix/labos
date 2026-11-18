@@ -27,6 +27,20 @@ test('24Q circuit catalog, keyboard tabs, precise movement and action disclosure
  await type('does-not-exist');assert.match(catalog.textContent??'',/Nema komponente/);
  await type('OLED');assert(catalog.querySelectorAll('.component-catalog button').length>1);assert(!/Nema komponente/.test(catalog.textContent??''));
  await type('');
+ // Adding a part reveals it without requiring the student to find it off-canvas.
+ catalog.open=true;
+ const count=saved.components.length;
+ await React.act(async()=>{[...catalog.querySelectorAll<HTMLButtonElement>('.component-catalog button')].find(b=>b.textContent?.endsWith('LED'))!.click();});
+ assert.equal(saved.components.length,count+1);assert.equal(catalog.open,false);
+ assert.equal(document.activeElement,document.querySelector('.circuit-canvas svg'));
+ const added=saved.components.at(-1)!;
+ const [vx,vy,vw,vh]=document.querySelector('.circuit-canvas svg')!.getAttribute('viewBox')!.split(' ').map(Number);
+ assert(added.x>=vx&&added.x<vx+vw&&added.y>=vy&&added.y<vy+vh);
+ assert.match(document.querySelector('.circuit-hint')!.textContent!,/Dodano:/);
+ assert.equal(document.querySelector<HTMLSelectElement>('[aria-label="Odaberi element"]')!.value,'part:'+added.id);
+ catalog.open=true;
+ await React.act(async()=>catalog.querySelector('input')!.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+ assert.equal(catalog.open,false);assert.equal(document.activeElement,catalog.querySelector('summary'));
  const canvas=document.querySelector('.circuit-canvas')!,inputs=document.querySelector('.simulation-controls')!;
  assert(canvas.compareDocumentPosition(inputs)&dom.window.Node.DOCUMENT_POSITION_FOLLOWING);
  const tabs=[...document.querySelectorAll<HTMLButtonElement>('.circuit-tabs [role="tab"]')];

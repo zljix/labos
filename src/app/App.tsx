@@ -329,6 +329,7 @@ export default function App() {
   const [filesOpen,setFilesOpen]=useState(false),[workOpen,setWorkOpen]=useState(false),[codeExpanded,setCodeExpanded]=useState(false);
   const [outputOpen,setOutputOpen]=useState(false),[outputHeight,setOutputHeight]=useState(180),[split,setSplit]=useState(50);
   const workspaceRef=useRef<HTMLElement>(null);
+  const [wrapLines,setWrapLines]=useState(false);
   const [openedFiles,setOpenedFiles]=useState<string[]>([]);
   useEffect(()=>{setOpenedFiles(p?[p.settings.activeFile]:[]);setOutputOpen(false);setCodeExpanded(false);},[p?.id]);
   useEffect(()=>{if(p)setOpenedFiles(paths=>paths.includes(p.settings.activeFile)?paths:[...paths,p.settings.activeFile]);},[p?.settings.activeFile]);
@@ -385,6 +386,15 @@ export default function App() {
     } finally {
       setWorking(false);
     }
+  }
+  function closeSidePanel(panel: 'files'|'lesson') {
+    if(panel==='files')setFilesOpen(false);else setLabTab('circuit');
+    setMobileTab('lab');
+    requestAnimationFrame(()=>{
+      const trigger=document.querySelector<HTMLButtonElement>(`button[aria-controls="${panel==='files'?'project-files':'lesson-instructions'}"]`);
+      if(trigger?.getClientRects().length)trigger.focus();
+      else document.querySelector<HTMLButtonElement>('.mobile-tabs button[aria-pressed="true"]')?.focus();
+    });
   }
   function openDialog(next: Dialog, value = "") {
     setFormError("");
@@ -841,6 +851,7 @@ export default function App() {
         <aside id="project-files" className="sidebar" aria-label="Datoteke projekta">
           <div className="section-heading">
             DATOTEKE
+            <button onClick={()=>closeSidePanel("files")} aria-label="Sklopi datoteke">×</button>
             <button
               className="icon-button"
               onClick={() => openDialog("files", p.language==="micropython"?"pomoc.py":"pomoc.h")}
@@ -927,7 +938,7 @@ export default function App() {
           </div>
         </aside>
         <aside id="lesson-instructions" className="instructions-panel" aria-label="Upute za vježbu">
-          <div className="panel-heading"><h2>Upute za vježbu</h2><button onClick={()=>{setLabTab('circuit');setMobileTab('lab');}} aria-label="Sklopi upute">×</button></div>
+          <div className="panel-heading"><h2>Upute za vježbu</h2><button onClick={()=>closeSidePanel("lesson")} aria-label="Sklopi upute">×</button></div>
           {p.files[URS_WORK] && <UrsPanel key={p.id} project={p} change={work=>ws.change('URS odgovori i opažanja',n=>{n.files[URS_WORK]=JSON.stringify(work,null,2);})}
             busy={working||runtime.busy||lessonCheck.busy} teacher={teacher} toggleTeacher={()=>setTeacher(v=>!v)} catalog={()=>openDialog('lessons')} circuit={()=>{setLabTab('circuit');setMobileTab('lab');}} run={run} radio={()=>openDialog('radio')}
             investigate={()=>void action(async()=>{await ws.flush();runtime.stop();lessonCheck.cancel();await ws.add(investigationProject(p));setLabTab('lesson');notify('Otvorena je lokalna istraživačka kopija. Izvorni pokušaj ostao je u Projektima.');})} record={()=>void recordUrs()} submit={()=>void submitUrs()} review={(verdict,note)=>void reviewUrs(verdict,note)} importReview={reviewImport}/>}
@@ -1101,6 +1112,7 @@ export default function App() {
               <h2>Kôd</h2>
             </div>
             <div className="editor-tools">
+              <button className="wrap-lines" aria-pressed={wrapLines} onClick={()=>setWrapLines(v=>!v)} title="Prikaži dugi redak u više vizualnih redaka, bez promjene koda">Prelomi retke</button>
               <button onClick={()=>{setCodeExpanded(v=>!v);setExpandedCircuit(false);}}>{codeExpanded?'Sklop uz kôd':'Proširi kôd'}</button>
               <button
                 className="icon-button"
@@ -1204,6 +1216,7 @@ export default function App() {
               value={p.files[active]}
               theme={s.theme}
               fontSize={s.fontSize}
+              wrapLines={wrapLines}
               reveal={reveal?.path===active?reveal:undefined}
               onChange={(v) =>
                 ws.change(`Uređivanje ${active}`, (n) => {

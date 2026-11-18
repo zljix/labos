@@ -1,6 +1,6 @@
 {
-  "version": "0.15.1-beta.1",
-  "stage": "25B",
-  "title": "Pregledniji radni prostor",
+  "version": "0.15.2-beta.1",
+  "stage": "25C",
+  "title": "Čitljiviji sklop i kôd",
   "acceptance": "technical-preview"
 }

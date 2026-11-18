@@ -32,7 +32,7 @@ Izvorni commit izdanja: `7c9ce3354b99c519d0e9d0077f0543b52734ce4e`. [GitHub Page
 
 Na [javnoj aplikaciji](https://zljix.github.io/labos/) potvrđena je oznaka `0.15.1-beta.1`. Provjeren je i prijelaz sa spremljene verzije `0.15.0-beta.1`: Status aplikacije → Provjeri novu verziju → Spremi i otvori novu verziju. Postojeći projekt ostao je sačuvan; njegovo MicroPython izvođenje, promjena tipkala i odziv LED-ice provjereni su nakon nadogradnje. Ne treba brisati podatke stranice.
 
-[Cjelovita školska regresijska provjera](https://github.com/zljix/labos/actions/runs/44313317331) pokrenuta je za isti izvorni commit. Pri predaji ovog zapisa još je trajala; njezin završni rezultat nije uključen u gornju potvrdu prolaza. Prethodno potpuno izvođenje tog postupka trajalo je oko 62 minute. Postupak uključuje PHP/MySQL, neovisno C++ prevođenje, bodovanje, predaju i pakiranje školskog izdanja.
+[Cjelovita školska regresijska provjera](https://github.com/zljix/labos/actions/runs/44313317331) pokrenuta je za isti izvorni commit. Naknadno je 18. 11. 2026. potvrđen završetak sa statusom **success**. Time je zatvorena otvorena CI provjera prethodnog izdanja; to nije dokaz učeničkog pilota. Prethodno potpuno izvođenje tog postupka trajalo je oko 62 minute. Postupak uključuje PHP/MySQL, neovisno C++ prevođenje, bodovanje, predaju i pakiranje školskog izdanja.
 
 ## Granice prihvata
 

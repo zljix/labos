@@ -26,12 +26,13 @@
 .lab-panel>.panel-heading,.lab-panel>.lab-view-tabs,.code-panel>.panel-heading,.code-panel>.file-tabs{flex-shrink:0}
 .lab-tab-content{overflow:auto}
 .code-panel .panel-heading{height:auto;min-height:45px;padding:8px 12px;flex-wrap:wrap}.editor-tools{flex-wrap:wrap;justify-content:flex-end}
+.wrap-lines[aria-pressed="true"]{background:var(--teal-light);color:var(--teal);border-color:var(--teal)}
 .panel-heading h1,.panel-heading h2{font-size:15px}.project-actions>button{font-size:14px}
 .file-group>summary{cursor:pointer;font-size:13px;font-weight:650;padding:10px 12px;color:var(--muted)}
 .file-group{min-width:0}
 .file-tabs{flex-shrink:0;overflow-x:auto;overflow-y:hidden}
 .editor-mount{min-height:100px;flex:1;overflow:hidden}
-.editor-mount .cm-editor{height:100%;max-height:none}
+.editor-mount .cm-editor{height:100%;min-height:0;max-height:none}
 .editor-hint{min-height:0;max-height:92px;overflow:auto}
 .output-resizer{position:absolute;top:0;left:0;right:0;height:6px;cursor:row-resize;touch-action:none;z-index:1}
 .output-resizer:focus-visible,.output-resizer:hover{background:var(--teal)}
@@ -41,7 +42,7 @@
 .bottom-tabs button{white-space:nowrap}
 .console-tools{gap:8px;flex-shrink:0}
 .console-tools>span{display:none}
-.console-tools>strong{font-size:12px;color:#b3462f}
+.console-tools>strong{font-size:13px;color:var(--danger)}
 .local-work{margin:8px 16px 0;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .local-work>div{flex:1 1 300px}.local-work h2{font-size:16px}.local-work p{font-size:14px;line-height:1.5;margin-top:6px}
 .school-sync{padding:12px 16px;margin:8px 16px 0}
@@ -55,8 +56,8 @@
 @media(max-width:760px){
  .topbar .brand small,.header-divider,.stage-tag{display:none}.topbar{padding:10px 12px}.brand{font-size:20px}.project-title{font-size:14px;max-width:calc(100vw - 140px);max-height:none}.save-state{font-size:12px;max-width:none}.header-actions{margin-left:auto}.header-actions .icon-button{width:36px}
  .desktop-panel-action{display:none!important}
- .toolbar{padding:10px 12px;gap:8px}.project-actions{justify-content:flex-start;gap:8px;width:100%}.project-actions button,.project-actions summary,.run-actions button{font-size:14px;min-height:44px}.run-actions{width:100%;border-top:1px solid var(--line);padding-top:8px;justify-content:flex-end;margin:0}.run-actions .runtime-status{margin-right:auto;font-size:12px}.stop-button span{display:inline}
- .mobile-tabs{display:flex;margin:4px 12px 0;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--raised)}.mobile-tabs button{flex:1;min-width:0;width:auto;font-size:13px;min-height:44px;padding:5px}.mobile-tabs button.selected{background:var(--surface);color:var(--teal)}
+ .toolbar{padding:10px 12px;gap:8px}.project-actions{justify-content:flex-start;gap:4px;width:100%}.project-actions button,.project-actions summary,.run-actions button{font-size:14px;min-height:44px}.project-actions>button,.project-actions>.action-group>summary{padding:6px}.run-actions{width:100%;border-top:1px solid var(--line);padding-top:8px;justify-content:flex-end;margin:0}.run-actions .runtime-status{margin-right:auto;font-size:12px}.stop-button span{display:inline}
+ .mobile-tabs{position:sticky;top:0;z-index:25;display:flex;margin:4px 12px 0;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--raised)}.mobile-tabs button{flex:1;min-width:0;width:auto;font-size:13px;min-height:44px;padding:5px}.mobile-tabs button.selected{background:var(--surface);color:var(--teal)}
  .workspace,.workspace.circuit-focus,.workspace.code-focus{display:flex;flex-direction:column;margin:10px 12px 0;gap:10px;min-height:440px}
  .workspace>.sidebar,.workspace>.instructions-panel,.workspace>.lab-panel,.workspace>.code-panel,.workspace>.bottom-panel,.workspace>.workspace-divider{display:none!important}
  .workspace.show-files>.sidebar,.workspace.show-lesson>.instructions-panel,.workspace.show-lab>.lab-panel,.workspace.show-code>.code-panel,.workspace.show-output>.bottom-panel{display:flex!important;position:static;width:100%;margin:0;max-height:none;box-shadow:none}

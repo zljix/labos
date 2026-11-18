@@ -18,6 +18,10 @@
   --teal: #087c70;
   --teal-light: #e7f5f1;
   --code: #fff;
+  --danger: #ad3434;
+  --warning: #785815;
+  --on-teal: #fff;
+  --teal-hover: #096c61;
   --shadow: 0 12px 38px #1d334012;
 }
 * {
@@ -62,8 +66,10 @@ button:disabled {
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 summary:focus-visible {
-  outline: 2px solid #0ca28b;
+  outline: 2px solid var(--teal);
   outline-offset: 3px;
 }
 a {
@@ -203,7 +209,7 @@ p {
   padding: 0;
   font-size: 12px;
   border-color: #b9c3cf;
-  color: #738296;
+  color: var(--muted);
   background: none;
 }
 .stage-tag,
@@ -939,7 +945,7 @@ p {
   background: transparent;
   border-color: transparent;
   font-size: 12px;
-  color: #8796a4;
+  color: var(--muted);
 }
 .file-tabs {
   display: flex;
@@ -991,7 +997,7 @@ p {
   padding: 2px;
   border: 0;
   background: none;
-  color: #8596a5;
+  color: var(--muted);
 }
 .editor-mount {
   flex: 1;
@@ -1023,7 +1029,7 @@ p {
 .cm-editor .cm-gutters {
   background: var(--code);
   border-right: 0;
-  color: #b1bbc6;
+  color: var(--muted);
   min-width: 40px;
 }
 .cm-editor .cm-lineNumbers .cm-gutterElement {
@@ -1075,7 +1081,7 @@ p {
   line-height: 1.2;
 }
 .editor-hint.changed {
-  color: #9c7829;
+  color: var(--warning);
   background: #fff9eb;
   border-color: #f4e8cc;
 }
@@ -1128,14 +1134,14 @@ p {
   font:
     8px ui-monospace,
     monospace;
-  color: #9aa8b5;
+  color: var(--muted);
 }
 .console-tools button {
   border: 0;
   padding: 3px;
   background: none;
   min-height: 25px;
-  color: #99a7b5;
+  color: var(--muted);
 }
 .console {
   margin: 0;
@@ -1143,7 +1149,7 @@ p {
   overflow: auto;
   flex: 1;
   font:
-    11px/1.85 "JetBrains Mono",
+    14px/1.65 "JetBrains Mono",
     ui-monospace,
     Consolas,
     monospace;
@@ -1154,7 +1160,7 @@ p {
 }
 .console-empty {
   font-size: 12px;
-  color: #a3afbb;
+  color: var(--muted);
 }
 .console-empty b {
   font-size: 16px;
@@ -1163,7 +1169,7 @@ p {
   font-weight: 400;
 }
 .console-error {
-  color: #bd5659;
+  color: var(--danger);
 }
 .project-info {
   padding: 23px 20px;
@@ -1223,7 +1229,7 @@ p {
   padding: 0 24px;
   gap: 20px;
   font-size: 12px;
-  color: #9cabb8;
+  color: var(--muted);
 }
 .app-footer > span {
   display: flex;
@@ -1232,7 +1238,7 @@ p {
 }
 .app-footer b {
   font-weight: 400;
-  color: #8a9ba9;
+  color: var(--muted);
   margin-left: 4px;
 }
 .app-footer .dot {
@@ -1254,7 +1260,7 @@ p {
   border: 0;
   background: none;
   font-size: 12px;
-  color: #9cabb8;
+  color: var(--muted);
   padding: 0;
   min-height: 20px;
   margin-left: auto;
@@ -1326,6 +1332,11 @@ p {
   backdrop-filter: blur(3px);
 }
 .modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  gap: 12px;
   padding: 18px 22px;
   display: flex;
   align-items: center;
@@ -1380,12 +1391,12 @@ p {
 }
 .primary {
   background: var(--teal);
-  color: white;
+  color: var(--on-teal);
   border-color: var(--teal);
 }
 .primary:hover {
-  background: #096c61;
-  border-color: #096c61;
+  background: var(--teal-hover);
+  border-color: var(--teal-hover);
 }
 .danger {
   background: #bc5454;
@@ -1393,7 +1404,7 @@ p {
   border-color: #bc5454;
 }
 .form-error {
-  color: #c14949 !important;
+  color: var(--danger) !important;
 }
 .project-picker,
 .history-picker {
@@ -1529,6 +1540,10 @@ p {
   --teal: #5dbca7;
   --teal-light: #203d3a;
   --code: #1c2632;
+  --danger: #ffaaa5;
+  --warning: #e8c77b;
+  --on-teal: #142d25;
+  --teal-hover: #79d1bf;
   background: var(--bg);
   color: var(--text);
 }
@@ -1782,7 +1797,7 @@ p {
     border: 0;
     font-size: 12px;
     min-height: 30px;
-    color: #8b9aa8;
+    color: var(--muted);
   }
   .mobile-tabs button.selected {
     background: var(--surface);
