@@ -1,4 +1,8 @@
-# Novo izdanje: 0.15.3-beta.1 · 25D
+# Novo izdanje: 0.15.4-beta.1 · 25E
+
+Pregled offline paketa, sigurno uklanjanje zastarjelih verzija i zaseban oporavak od ograničenja prostora. Aktivna i nova preuzeta verzija te paketi otvorenih kartica ostaju zaštićeni; učenički projekti ne brišu se. [Opseg i provjere](docs/STAGE25E_OFFLINE_PROSTOR.md).
+
+## Prethodno izdanje 0.15.3-beta.1 · 25D
 
 Napredak provjere offline paketa, konkretne poruke pogrešaka i ograničeno ponavljanje neuspjelog preuzimanja uz obveznu SHA-256 provjeru. [Opseg i provjere](docs/STAGE25D_OFFLINE.md).
 

@@ -7,6 +7,71 @@ const MARKER = BASE + '.lab-offline-ready';
 const urls = new Set(PACKAGE.files.map(file => file.url));
 const origin = self.location.origin;
 const key = path => new URL(path, origin).href;
+const validBuild = build => typeof build === 'string' && /^[a-f0-9]{16}$/.test(build);
+// Exact suffix matching matters for a root installation: its prefix also
+// prefixes caches of other laboratories hosted in subdirectories.
+const ownCache = name => name.startsWith(PREFIX) && validBuild(name.slice(PREFIX.length));
+const ownClient = client => {
+  try { const url = new URL(client.url); return url.origin === origin && url.pathname.startsWith(BASE); }
+  catch { return false; }
+};
+function ask(target, type) {
+  return new Promise((resolve, reject) => {
+    const channel = new MessageChannel();
+    const finish = (error, value) => {
+      clearTimeout(timer); channel.port1.close(); channel.port2.close();
+      if (error) reject(error); else resolve(value);
+    };
+    const timer = setTimeout(() => finish(Error('Nije moguće potvrditi verzije svih otvorenih kartica.')), 2000);
+    channel.port1.onmessage = event => finish(null, event.data);
+    try { target.postMessage({ type }, [channel.port2]); } catch (error) { finish(error); }
+  });
+}
+const workers = () => [self.registration.active, self.registration.waiting, self.registration.installing];
+async function storagePlan() {
+  const names = (await caches.keys()).filter(ownCache);
+  const result = { total: names.length, removable: [], blocked: '', clients: [], workers: [] };
+  try {
+    // Query even uncontrolled pages. An older page that cannot identify its
+    // release blocks deletion, rather than being assumed unused.
+    result.clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (result.clients.some(client => !client.url)) throw Error('Nije moguće provjeriti otvorene kartice.');
+    result.clients = result.clients.filter(ownClient);
+    result.workers = workers();
+    const replies = await Promise.all([
+      ...result.clients.map(client => ask(client, 'LAB_CLIENT_BUILD')),
+      ...result.workers.filter(Boolean).map(worker => ask(worker, 'LAB_STATUS')),
+    ]);
+    if (replies.some(reply => !validBuild(reply?.build))) throw Error('Otvorena kartica ne potvrđuje svoju verziju.');
+    const protectedNames = new Set([CACHE, ...replies.map(reply => PREFIX + reply.build)]);
+    result.removable = names.filter(name => !protectedNames.has(name));
+  } catch (error) { result.blocked = String(error?.message ?? error) + ' Zatvori druge kartice laboratorija i ponovno provjeri prostor.'; }
+  return result;
+}
+async function cleanStorage() {
+  const plan = await storagePlan();
+  let removed = 0;
+  if (!plan.blocked) {
+    const ids = new Set(plan.clients.map(client => client.id));
+    for (const name of plan.removable) {
+      // Recheck after the asynchronous handshake and before each deletion.
+      // A newly opened/navigated tab or changed registration cancels cleanup.
+      const current = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (current.some(client => !client.url || (ownClient(client) && !ids.has(client.id))) || workers().some((worker, i) => worker !== plan.workers[i])) {
+        plan.blocked = 'Otvorene kartice ili verzija aplikacije promijenile su se. Ponovno provjeri prostor.';
+        break;
+      }
+      try { if (await caches.delete(name)) removed++; }
+      catch { plan.blocked = 'Preglednik nije dopustio uklanjanje svih zastarjelih paketa. Projekti su sačuvani.'; break; }
+    }
+  }
+  return { total: plan.total - removed, removable: plan.removable.length - removed, removed, blocked: plan.blocked };
+}
+let maintenance;
+function maintainStorage() {
+  if (!maintenance) maintenance = cleanStorage().finally(() => { maintenance = undefined; });
+  return maintenance;
+}
 
 async function report(type, detail = {}) {
   // A diagnostic failure must never make a verified installation fail.
@@ -41,6 +106,8 @@ async function prepare() {
   return preparation;
 }
 async function preparePackage() {
+  // Never rewrite an already complete package during a repair request.
+  if ((await status()).ready) { await report('LAB_PACKAGE_READY'); return; }
   // Verify every byte before making the package eligible for offline use.
   // Redirects to an authentication page or an HTML fallback never become code.
   const responses = new Array(PACKAGE.files.length);
@@ -62,15 +129,32 @@ async function preparePackage() {
     await report('LAB_PACKAGE_ERROR', { message: failure.message });
     throw failure;
   }
-  try {
+  const save = async () => {
     const cache = await caches.open(CACHE);
-    for (const [path, response] of responses) await cache.put(key(path), response);
+    for (const [path, response] of responses) await cache.put(key(path), response.clone());
     await cache.put(key(MARKER), new Response(JSON.stringify({ build: PACKAGE.build }), { headers: { 'Content-Type': 'application/json' } }));
-    await report('LAB_PACKAGE_READY');
-  } catch (error) {
-    await caches.delete(CACHE).catch(() => {});
-    await report('LAB_PACKAGE_ERROR', { message: 'Paket nije spremljen u preglednik: ' + String(error?.message ?? error) });
-    throw error;
+  };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { await save(); await report('LAB_PACKAGE_READY'); return; }
+    catch (error) {
+      await caches.delete(CACHE).catch(() => {});
+      const quota = error?.name === 'QuotaExceededError' || /quota/i.test(String(error?.message ?? error));
+      let cleanup;
+      if (quota && attempt === 0) {
+        // Only stale application caches may be reclaimed. Never IndexedDB,
+        // active/waiting releases, open-page releases or another app's caches.
+        cleanup = await maintainStorage().catch(() => ({ removed: 0 }));
+        if (cleanup.removed > 0) {
+          await report('LAB_STORAGE_CLEANED', { removed: cleanup.removed });
+          continue;
+        }
+      }
+      await report('LAB_PACKAGE_ERROR', {
+        code: quota ? 'storage-quota' : 'storage-write',
+        message: quota ? 'Preglednik je odbio spremanje offline paketa zbog ograničenja prostora. ' + (cleanup?.blocked || 'Oslobodi prostor na uređaju pa ponovi preuzimanje.') : 'Paket nije spremljen u preglednik: ' + String(error?.message ?? error),
+      });
+      throw error;
+    }
   }
 }
 self.addEventListener('install', event => {
@@ -83,14 +167,27 @@ self.addEventListener('activate', event => {
   event.waitUntil(self.clients.claim());
 });
 async function status() {
+  const bytes = PACKAGE.files.reduce((sum, file) => sum + file.bytes, 0);
+  if (!(await caches.keys()).includes(CACHE)) return { ready: false, build: PACKAGE.build, version: PACKAGE.version, count: PACKAGE.files.length, bytes };
   const cache = await caches.open(CACHE);
   const keys = new Set((await cache.keys()).map(request => new URL(request.url).pathname));
   const ready = keys.has(MARKER) && PACKAGE.files.every(file => keys.has(file.url));
-  return { ready, build: PACKAGE.build, version: PACKAGE.version, count: PACKAGE.files.length, bytes: PACKAGE.files.reduce((sum, file) => sum + file.bytes, 0) };
+  return { ready, build: PACKAGE.build, version: PACKAGE.version, count: PACKAGE.files.length, bytes };
 }
 self.addEventListener('message', event => {
   const reply = value => event.ports[0]?.postMessage(value);
   if (event.data?.type === 'LAB_STATUS') event.waitUntil(status().then(reply).catch(error => reply({ error: String(error) })));
+  if (event.data?.type === 'LAB_STORAGE' || event.data?.type === 'LAB_CLEAN_STORAGE') event.waitUntil((async () => {
+    if (!event.source?.id || !ownClient(event.source)) { reply({ error: 'Zahtjev mora doći iz otvorenog laboratorija.' }); return; }
+    if (preparation) { reply({ error: 'Pričekaj završetak preuzimanja pa ponovno provjeri prostor.' }); return; }
+    try {
+      if (event.data.type === 'LAB_CLEAN_STORAGE') reply(await maintainStorage());
+      else {
+        const plan = await storagePlan();
+        reply({ total: plan.total, removable: plan.removable.length, removed: 0, blocked: plan.blocked });
+      }
+    } catch { reply({ error: 'Pregled ili čišćenje paketa nije dovršeno. Projekti su sačuvani.' }); }
+  })());
   if (event.data?.type === 'LAB_REPAIR') event.waitUntil(prepare().then(status).then(reply).catch(error => reply({ error: 'Paket nije ponovno preuzet. ' + String(error) })));
   if (event.data?.type === 'LAB_ACTIVATE') event.waitUntil((async () => {
     const windows = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).filter(client => !client.url || new URL(client.url).pathname.startsWith(BASE));

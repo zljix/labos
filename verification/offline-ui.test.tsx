@@ -11,7 +11,13 @@ test('download progress, failure, retry and waiting update preserve the active o
   const keys = ['window','document','location','navigator','isSecureContext','caches','MessageChannel','IS_REACT_ACT_ENVIRONMENT'];
   const prior = keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis,key)] as const);
   const events = new dom.window.EventTarget(), registration = new dom.window.EventTarget() as any;
-  const active = {scriptURL:'https://lab.example/labos/sw.js', postMessage(_message:any, ports:any[]) {ports[0].postMessage({ready:true, build:'ui-test',version:'0.15.2-beta.1',count:205,bytes:16000000});}};
+  let cleaned = false;
+  const active = {scriptURL:'https://lab.example/labos/sw.js', postMessage(message:any, ports:any[]) {
+    if (message.type === 'LAB_STORAGE' || message.type === 'LAB_CLEAN_STORAGE') {
+      cleaned ||= message.type === 'LAB_CLEAN_STORAGE';
+      ports[0].postMessage({total:cleaned ? 2 : 3,removable:cleaned ? 0 : 1,removed:cleaned ? 1 : 0,blocked:''});
+    } else ports[0].postMessage({ready:true, build:'ui-test',version:'0.15.2-beta.1',count:205,bytes:16000000});
+  }};
   registration.active = active;
   registration.update = async () => {};
   (events as any).register = async () => registration;
@@ -40,6 +46,24 @@ test('download progress, failure, retry and waiting update preserve the active o
   assert(!document.querySelector<HTMLButtonElement>('.system-actions button')!.disabled);
   await act(async()=>document.querySelector<HTMLButtonElement>('.system-actions button')!.click());
   assert.match(document.querySelector('[role="alert"]')!.textContent!,/micropython.wasm/, 'inspection of the old package must not erase the new download failure');
+  await message({type:'LAB_PACKAGE_ERROR',code:'storage-quota',message:'Preglednik je odbio spremanje offline paketa zbog ograničenja prostora.'});
+  const alert = document.querySelector('[role="alert"]')!.textContent!;
+  assert.match(alert,/Procjena slobodnog prostora ne jamči/);
+  assert(!alert.includes('Provjeri vezu'), 'a storage quota failure must not be presented as a network failure');
+  const button=(label:string)=>[...document.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===label)!;
+  assert(button('Ukloni zastarjele pakete').disabled);
+  await act(async()=>button('Pregledaj offline pakete').click());
+  assert.match(text(),/Paketi ovog laboratorija: 3/);
+  assert(!button('Ukloni zastarjele pakete').disabled);
+  assert.equal(cleaned,false, 'inspection must not delete packages');
+  await act(async()=>button('Ukloni zastarjele pakete').click());
+  assert.match(text(),/Uklonjeno zastarjelih paketa: 1. Projekti su sačuvani/);
+  assert(button('Ukloni zastarjele pakete').disabled);
+  await message({type:'LAB_STORAGE_CLEANED',removed:2});
+  assert.match(text(),/Spremanje nove verzije pokušava se ponovno/);
+  let clientBuild:any;
+  await act(async()=>events.dispatchEvent(new dom.window.MessageEvent('message',{data:{type:'LAB_CLIENT_BUILD'},source:installing,ports:[{postMessage:(data:any)=>{clientBuild=data.build;}} as any]})));
+  assert.equal(clientBuild,'ui-test');
   await act(async()=>{registration.installing=installing;installing.state='installing';registration.dispatchEvent(new dom.window.Event('updatefound'));});
   await message({type:'LAB_PACKAGE_PROGRESS',version:'0.15.3-beta.1',completed:205,total:205});
   assert.match(text(),/Spremanje paketa u preglednik/);

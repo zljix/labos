@@ -1,6 +1,6 @@
 {
-  "version": "0.15.3-beta.1",
-  "stage": "25D",
-  "title": "Pouzdanije offline ažuriranje",
+  "version": "0.15.4-beta.1",
+  "stage": "25E",
+  "title": "Sigurno upravljanje offline prostorom",
   "acceptance": "technical-preview"
 }
