@@ -1,6 +1,6 @@
 {
-  "version": "0.15.4-beta.1",
-  "stage": "25E",
-  "title": "Sigurno upravljanje offline prostorom",
+  "version": "0.15.5-beta.1",
+  "stage": "25F",
+  "title": "Manji offline paket",
   "acceptance": "technical-preview"
 }

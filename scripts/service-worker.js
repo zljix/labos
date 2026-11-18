@@ -5,6 +5,8 @@ const PREFIX = 'esp32-micropython-lab-app-' + (BASE === '/' ? '' : encodeURIComp
 const CACHE = PREFIX + PACKAGE.build;
 const MARKER = BASE + '.lab-offline-ready';
 const urls = new Set(PACKAGE.files.map(file => file.url));
+const storedFiles = PACKAGE.files.filter(file => !file.cacheUrl);
+const aliases = Object.fromEntries(PACKAGE.files.filter(file => file.cacheUrl).map(file => [file.url, file.cacheUrl]));
 const origin = self.location.origin;
 const key = path => new URL(path, origin).href;
 const validBuild = build => typeof build === 'string' && /^[a-f0-9]{16}$/.test(build);
@@ -110,18 +112,18 @@ async function preparePackage() {
   if ((await status()).ready) { await report('LAB_PACKAGE_READY'); return; }
   // Verify every byte before making the package eligible for offline use.
   // Redirects to an authentication page or an HTML fallback never become code.
-  const responses = new Array(PACKAGE.files.length);
+  const responses = new Array(storedFiles.length);
   let next = 0, completed = 0, failure;
-  await report('LAB_PACKAGE_PROGRESS', { completed, total: PACKAGE.files.length });
+  await report('LAB_PACKAGE_PROGRESS', { completed, total: storedFiles.length });
   // Bounded concurrency shortens a large package install on high-latency links.
   // Drain every request before reporting failure; no partial package is ready.
-  await Promise.all(Array.from({ length: Math.min(4, PACKAGE.files.length) }, async () => {
-    while (!failure && next < PACKAGE.files.length) {
-      const index = next++, file = PACKAGE.files[index];
+  await Promise.all(Array.from({ length: Math.min(4, storedFiles.length) }, async () => {
+    while (!failure && next < storedFiles.length) {
+      const index = next++, file = storedFiles[index];
       try {
         responses[index] = [file.url, await verifiedResponse(file)];
         completed++;
-        if (completed % 8 === 0 || completed === PACKAGE.files.length) await report('LAB_PACKAGE_PROGRESS', { completed, total: PACKAGE.files.length });
+        if (completed % 8 === 0 || completed === storedFiles.length) await report('LAB_PACKAGE_PROGRESS', { completed, total: storedFiles.length });
       } catch (error) { failure ??= error; }
     }
   }));
@@ -132,7 +134,7 @@ async function preparePackage() {
   const save = async () => {
     const cache = await caches.open(CACHE);
     for (const [path, response] of responses) await cache.put(key(path), response.clone());
-    await cache.put(key(MARKER), new Response(JSON.stringify({ build: PACKAGE.build }), { headers: { 'Content-Type': 'application/json' } }));
+    await cache.put(key(MARKER), new Response(JSON.stringify({ build: PACKAGE.build, aliases }), { headers: { 'Content-Type': 'application/json' } }));
   };
   for (let attempt = 0; attempt < 2; attempt++) {
     try { await save(); await report('LAB_PACKAGE_READY'); return; }
@@ -167,11 +169,11 @@ self.addEventListener('activate', event => {
   event.waitUntil(self.clients.claim());
 });
 async function status() {
-  const bytes = PACKAGE.files.reduce((sum, file) => sum + file.bytes, 0);
+  const bytes = storedFiles.reduce((sum, file) => sum + file.bytes, 0);
   if (!(await caches.keys()).includes(CACHE)) return { ready: false, build: PACKAGE.build, version: PACKAGE.version, count: PACKAGE.files.length, bytes };
   const cache = await caches.open(CACHE);
   const keys = new Set((await cache.keys()).map(request => new URL(request.url).pathname));
-  const ready = keys.has(MARKER) && PACKAGE.files.every(file => keys.has(file.url));
+  const ready = keys.has(MARKER) && storedFiles.every(file => keys.has(file.url));
   return { ready, build: PACKAGE.build, version: PACKAGE.version, count: PACKAGE.files.length, bytes };
 }
 self.addEventListener('message', event => {
@@ -204,12 +206,27 @@ self.addEventListener('fetch', event => {
   if (!urls.has(path) && !versioned) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(key(path));
-    if (cached) return cached;
+    const cached = await cache.match(key(aliases[path] ?? path));
+    // Clear the stored response URL for aliases so relative module imports
+    // stay under the requested release URL, rather than the stable URL.
+    if (cached) return aliases[path] ? new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers: cached.headers }) : cached;
     if (versioned) {
       for (const name of await caches.keys()) {
         if (!name.startsWith(PREFIX) || name === CACHE) continue;
-        const previous = await (await caches.open(name)).match(key(path));
+        const prior = await caches.open(name);
+        let previous = await prior.match(key(path));
+        if (!previous) {
+          // Each retained release owns its mapping: never resolve an older
+          // versioned URL against this release's stable runtime.
+          try {
+            const marker = await prior.match(key(MARKER));
+            const target = (await marker?.json())?.aliases?.[path];
+            if (typeof target === 'string' && target.startsWith(BASE) && !target.startsWith('//')) {
+              const response = await prior.match(key(target));
+              if (response) previous = new Response(response.body, { status: response.status, statusText: response.statusText, headers: response.headers });
+            }
+          } catch { /* Older releases have no alias map. */ }
+        }
         if (previous) return previous;
       }
     }

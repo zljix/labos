@@ -1,6 +1,6 @@
 {
   "name": "esp32-micropython-lab",
-  "version": "0.15.4-beta.1",
+  "version": "0.15.5-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -145,8 +145,8 @@
     "vite": "8.3.8"
   },
   "labosRelease": {
-    "stage": "25E",
-    "title": "Sigurno upravljanje offline prostorom",
+    "stage": "25F",
+    "title": "Manji offline paket",
     "acceptance": "technical-preview"
   }
 }

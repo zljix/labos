@@ -51,6 +51,15 @@ export function offlinePlugin(root, build, version, base = '/') {
         sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
         bytes: statSync(path).size,
       }));
+      // Only collapse release copies onto their byte-identical stable counterpart.
+      // Different paths/types are never grouped just because their bytes match.
+      const byUrl = new Map(files.map(file => [file.url, file]));
+      for (const file of files) {
+        const prefix = base + 'app/' + build + '/';
+        if (!file.url.startsWith(prefix)) continue;
+        const original = byUrl.get(base + file.url.slice(prefix.length));
+        if (original && original.sha256 === file.sha256 && original.bytes === file.bytes) file.cacheUrl = original.url;
+      }
       const config = { build, version, base, files };
       writeFileSync(resolve(dist, 'offline-package.json'), JSON.stringify(config, null, 2) + '\n');
       const template = readFileSync(resolve(root, 'scripts/service-worker.js'), 'utf8');

@@ -138,13 +138,13 @@ test('a stale resource is retried with its expected hash and cached at the canon
   await env.install();
   assert(env.peak > 1 && env.peak <= 4, 'at most four parallel downloads');
   const retry = env.requested.filter(url => url.includes('?'));
-  const wasm = manifest.files.filter(file => file.url.endsWith('.wasm'));
+  const wasm = manifest.files.filter(file => file.url.endsWith('.wasm') && !file.cacheUrl);
   assert.equal(retry.length, wasm.length);
   for (const file of wasm) assert(retry.includes(origin + file.url + '?lab-sha256=' + file.sha256));
   assert.equal((await env.message('LAB_STATUS')).ready, true);
   assert(env.reports.every(r => r.url.startsWith(origin + base)), 'other applications must not receive progress');
   const progress = env.reports.filter(r => r.message.type === 'LAB_PACKAGE_PROGRESS').map(r => r.message.completed);
-  assert.equal(progress[0], 0); assert.equal(progress.at(-1), manifest.files.length);
+  assert.equal(progress[0], 0); assert.equal(progress.at(-1), manifest.files.filter(file => !file.cacheUrl).length);
   assert.deepEqual(progress, [...progress].sort((a, b) => a - b));
   env.offline();
   for (const file of wasm) assert.equal(createHash('sha256').update(Buffer.from(await (await env.request(file.url)).arrayBuffer())).digest('hex'), file.sha256);
@@ -183,4 +183,43 @@ test('other GitHub project tabs do not block an explicit update but two laborato
   assert.equal((await own.message('LAB_ACTIVATE')).accepted, true); assert.equal(own.skipped, true);
   const two = worker({ windows: [origin + base, origin + base + 'guide.html'] }); await two.install();
   assert.match((await two.message('LAB_ACTIVATE')).error, /druge kartice/); assert.equal(two.skipped, false);
+});
+
+test('release aliases store and download identical runtime bytes only once', async () => {
+  const aliases = manifest.files.filter(file => file.cacheUrl);
+  assert(aliases.length > 0);
+  for (const file of aliases) {
+    const target = manifest.files.find(other => other.url === file.cacheUrl);
+    assert(target && !target.cacheUrl);
+    assert.equal(file.sha256, target.sha256);
+    assert.equal(file.bytes, target.bytes);
+  }
+  const env = worker(); await env.install(); env.offline();
+  const data = env.records.get(cachePrefix + manifest.build);
+  assert.equal(data.size, manifest.files.length - aliases.length + 1);
+  assert.equal(env.requests, manifest.files.length - aliases.length);
+  assert.equal((await env.message('LAB_STATUS')).bytes, manifest.files.filter(file => !file.cacheUrl).reduce((sum, file) => sum + file.bytes, 0));
+  for (const file of aliases) {
+    assert(!data.has(origin + file.url));
+    const response = await env.request(file.url);
+    assert.equal(response.url, '', 'relative imports must use requested release URL');
+    assert.equal(createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex'), file.sha256);
+  }
+  const file = aliases.find(file => file.url.endsWith('.wasm'));
+  data.delete(origin + file.cacheUrl);
+  assert.equal((await env.message('LAB_STATUS')).ready, false);
+});
+
+test('new worker resolves retained release aliases inside that release only', async () => {
+  const oldPath = base + 'app/aaaaaaaaaaaaaaaa/worker.mjs';
+  const target = base + 'worker.mjs';
+  const records = new Map([[cachePrefix + 'aaaaaaaaaaaaaaaa', new Map([
+    [origin + base + '.lab-offline-ready', new Response(JSON.stringify({ build: 'aaaaaaaaaaaaaaaa', aliases: { [oldPath]: target } }))],
+    [origin + target, new Response('// old release', { headers: { 'Content-Type': 'text/javascript' } })],
+  ])]]);
+  const env = worker({ prior: records }); await env.install(); env.offline();
+  const response = await env.request(oldPath);
+  assert.equal(await response.text(), '// old release');
+  assert.equal(response.headers.get('Content-Type'), 'text/javascript');
+  assert.equal(response.url, '');
 });
