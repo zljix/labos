@@ -1,4 +1,16 @@
-# Novo izdanje: 0.15.4-beta.1 · 25E
+# Novo izdanje: 0.15.7-beta.1 · 25H
+
+Pretraživanje svih datoteka projekta, preglednije pomoćne datoteke i zatvaranje otvorenih kartica bez brisanja sadržaja. Sačuvana je navigacija tipkovnicom, pristup svim datotekama i format izvoza. [Opseg i provjere](docs/STAGE25H_DATOTEKE_I_KARTICE.md).
+
+## Prethodno izdanje 0.15.6-beta.1 · 25G
+
+Električne postavke komponenti odvojene od sklopivog položaja, čitljivije kontrole i pripadajuća dijagnostika. [Opseg i provjere](docs/STAGE25G_SVOJSTVA_KOMPONENTI.md).
+
+## Prethodno izdanje 0.15.5-beta.1 · 25F
+
+Manji offline paket uz provjerenu jednakost dijeljenih datoteka. [Opseg i provjere](docs/STAGE25F_MANJI_OFFLINE_PAKET.md).
+
+## Prethodno izdanje 0.15.4-beta.1 · 25E
 
 Pregled offline paketa, sigurno uklanjanje zastarjelih verzija i zaseban oporavak od ograničenja prostora. Aktivna i nova preuzeta verzija te paketi otvorenih kartica ostaju zaštićeni; učenički projekti ne brišu se. [Opseg i provjere](docs/STAGE25E_OFFLINE_PROSTOR.md).
 
