@@ -6,6 +6,7 @@ on:
     paths:
       - 'prototypes/avr-offline/**'
       - '.github/workflows/avr-offline-prototype.yml'
+      - 'vendor/arduino/**'
       - 'package.json'
       - 'package-lock.json'
   workflow_dispatch:
@@ -34,6 +35,8 @@ jobs:
       - name: Pripremi testni Chromium
         run: prototypes/avr-offline/ci/node_modules/.bin/playwright install --with-deps chromium
       - run: npm run prototype:avr:build
+      - name: Potvrdi ponovljivost SDK-a i biblioteka
+        run: git diff --exit-code -- prototypes/avr-offline/runtime-manifest.json prototypes/avr-offline/packed-manifest.json prototypes/avr-offline/core-build-manifest.json prototypes/avr-offline/library-build-manifest.json
       - name: Provjeri jezgre, paket i dokaz izolacije
         run: |
           npm run prototype:avr:test
@@ -41,6 +44,7 @@ jobs:
           npm run prototype:avr:package
           node --test prototypes/avr-offline/network-proof.test.mjs
           node --import tsx --test prototypes/avr-offline/project-bridge.test.ts
+          node --import tsx --test prototypes/avr-offline/libraries.test.ts
       - name: Spremi paket i zatvori preglednik
         run: node prototypes/avr-offline/isolated-browser-test.mjs prepare
       - name: Novi izvori i restart bez mrežnih sučelja
@@ -57,4 +61,5 @@ jobs:
           path: |
             .build/avr-isolated-evidence/
             .build/avr-prototype-node-evidence.json
+            .build/avr-library-evidence.json
           retention-days: 30

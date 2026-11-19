@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
+import {buildLibraries} from './build-libraries.mjs';
 import {unpackSDK,compilerFlags,runTool,TARGETS} from './compiler.mjs';
 
 export const CORE_SOURCE={name:'ArduinoCore-avr-1.8.8.tar.gz',sha256:'e37de8a50ccf3a6a43aee2d482c066519ec05fb7fff63f57fd9daf0fd238b808'};
@@ -61,6 +62,7 @@ export async function buildSDK({assets,here,upstream}) {
     sdk.set(path,core);
     evidence.boards[board]={variant:TARGETS[board].variant,macro:'ARDUINO_AVR_'+TARGETS[board].macro,bytes:core.length,sha256:digest(core),commands,diagnostics};
   }
+  await buildLibraries({sdk,source,assets,here,factory});
   // Sources travel separately; the browser only needs public core headers.
   for(const p of [...sdk.keys()])if(/\/cores\/arduino\/.*\.(c|cpp|S)$/.test(p))sdk.delete(p);
   const bytes=packSDK(sdk),metadata={bytes:bytes.length,sha256:digest(bytes)};
@@ -69,7 +71,7 @@ export async function buildSDK({assets,here,upstream}) {
   evidence.sdk={...metadata,entries:sdk.size,originalBytes:upstream.files['sdk.bin'].bytes};
   await writeFile(here+'/core-build-manifest.json',JSON.stringify(evidence,null,2)+'\n');
   const files={...upstream.files};delete files['ctags.js'];delete files['sdk.bin'];files[sdkFile]=metadata;
-  const manifest={id:'labos-avr-uno-nano-2',upstream:upstream.id,sdkFile,files};
+  const manifest={id:'labos-avr-uno-nano-libraries-3',upstream:upstream.id,sdkFile,files};
   manifest.packageHash=digest(JSON.stringify(manifest));
   await writeFile(here+'/runtime-manifest.json',JSON.stringify(manifest,null,2)+'\n');
   return manifest;

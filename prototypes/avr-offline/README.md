@@ -1,4 +1,4 @@
-# Arduino offline — prototip 02
+# Arduino offline — prototip 03
 
 Osnova: `zljix/labos`, 0.15.7-beta.1, commit `b5bc958`.
 Korisnik je odredio `labosv2` kao odredište buduće objave nadograđenog Labosa.
@@ -19,6 +19,9 @@ ne mijenja postojeći Arduino CLI format ni glavno sučelje Labosa.
 Prošla je i proširena provjera projekta u mrežnoj izolaciji; dokazi i
 trenutačno stanje nastavka: [EVIDENCE-04.md](EVIDENCE-04.md).
 
+Prototip 03 dodaje svih deset zaključanih Labos biblioteka te Wire/SPI/EEPROM.
+Opis opsega: [LIBRARIES.md](LIBRARIES.md). Rezultati: [EVIDENCE-05.md](EVIDENCE-05.md).
+
 ## Pokretanje
 
 Razvojno računalo:
@@ -32,9 +35,10 @@ python3 -m http.server 4187 --directory .build/avr-offline
 
 Otvori http://localhost:4187, pritisni **Pripremi paket**, pričekaj potvrdu.
 Isključi mrežu. Promijeni interval i poruku u programu. Pritisni **Prevedi
-offline**, zatim **Pokreni 1,2 s**. D13 graf i serijski ispis dolaze iz
+offline**, zatim **Pokreni simulaciju**. D13 graf i serijski ispis dolaze iz
 postojećeg Labosova `AVREngine`, koji izvršava novoprevedeni AVR strojni kod.
-Graf je zapis 1,2 sekunde simuliranog vremena, a ne mjerenje zidnog vremena.
+Trajanje je 1,2, 3 ili 5 sekundi simuliranog vremena; to nije zidno vrijeme.
+Za DHT22 odaberi barem 3 s kako bi završila stabilizacija senzora.
 
 Node/Python služe razvoju i prvom posluživanju ovog prototipa. Nisu dio
 prevođenja u pregledniku. Nakon spremanja aplikacije i prevoditelja, za
@@ -53,7 +57,7 @@ Za buduću javnu aplikaciju potreban je HTTPS. Ovo još nije integrirana beta.
   ne može biti prihvaćen pod novim paketom.
 - Novi SDK dobiva ključ prema sadržaju. Nadogradnja ponovno koristi iste
   alate, zadržava stari SDK i ne briše projekte ili predmemorije.
-- Paket se preuzima i sprema komprimiran (oko 14,1 MiB; raniji prototip koristio je oko 17 MiB).
+- Paket se preuzima i sprema komprimiran; točna veličina je u `packed-manifest.json`.
   Raspakiravanje je ograničeno očekivanom veličinom i provjerom SHA-256.
 - Nastavak pripreme pretvara ranije spremljene vlastite nekomprimirane zapise
   na istim ključevima; ne briše predmemorije, projekte ni nepovezane zapise.
@@ -65,7 +69,7 @@ Za buduću javnu aplikaciju potreban je HTTPS. Ovo još nije integrirana beta.
 
 Ovo nije potpuna zamjena Arduino IDE-a. Prototip ne generira automatske
 deklaracije funkcija. Napiši deklaraciju prije uporabe ili upotrijebi zaglavlje.
-Više `.ino` datoteka, poddirektoriji, odabir dodatnih biblioteka, ESP32-S3,
+Više `.ino` datoteka, poddirektoriji, biblioteke izvan zaključanog popisa, ESP32-S3,
 fizičko programiranje pločice i službeno bodovanje nisu uključeni.
 Najviše 32 izvorne datoteke / 256 KiB; radni proces ima ograničenje 60 s.
 `sketch.cpp` je rezerviran za generirani izvor. `staticRamBytes` ne uključuje
@@ -117,7 +121,9 @@ Vlastite Uno/Nano jezgre jesu izgrađene iz izvora i ponovljena izgradnja
 provjerava se prema dobivenim sažecima. Repozitorij upstream recepta na pregledanom commitu nema korijensku LICENSE
 datoteku; prava redistribucije samog recepta treba razjasniti prije pakiranja
 javnog izdanja. Zato grana čuva URL-ove i sažetke recepta, a skripta ih
-preuzima samo u lokalnu razvojnu mapu. Prije javnog izdanja treba uz konkretni
+preuzima samo u lokalnu razvojnu mapu. Biblioteke iz `vendor/arduino` isporučuju se s punim zaključanim izvorima
+i postojećim licencama u `labos-library-sources.tar.gz`.
+Prije javnog izdanja treba uz konkretni
 binarni paket objaviti pripadajuće izvore i upute.
 
 ## Provjere
@@ -126,6 +132,7 @@ binarni paket objaviti pripadajuće izvore i upute.
 npm run prototype:avr:test
 npm run prototype:avr:worker
 npm run prototype:avr:package
+npm run prototype:avr:libraries
 npm run prototype:avr:memory
 npm run prototype:avr:browser
 node --import tsx --test prototypes/avr-offline/project-bridge.test.ts

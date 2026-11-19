@@ -1,4 +1,4 @@
-import {build} from 'esbuild';
+import {buildShell} from './build-shell.mjs';
 import {readFile,writeFile,mkdir,copyFile,readdir,unlink} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {resolve,dirname} from 'node:path';
@@ -54,18 +54,9 @@ for(const name of Object.keys(licenses.files)){
   await copyFile(path,output+'/toolchain/'+name);
 }
 await copyFile(assets+'/'+CORE_SOURCE.name,output+'/toolchain/'+CORE_SOURCE.name);
+// Corresponding Labos library sources include original notices and license files.
+const libraryArchive=spawnSync('tar',['--sort=name','--mtime=@0','--owner=0','--group=0','--numeric-owner','-czf',output+'/toolchain/labos-library-sources.tar.gz','-C',root,'vendor/arduino'],{stdio:'inherit'});
+if(libraryArchive.status!==0)throw Error('Cannot package pinned library sources');
+await copyFile(here+'/library-build-manifest.json',output+'/toolchain/library-build-manifest.json');
 await copyFile(here+'/core-build-manifest.json',output+'/toolchain/core-build-manifest.json');
-const shared={bundle:true,platform:'browser',target:'es2022',define:{__APP_BUILD__:'"prototype"',__APP_BASE__:'"./"',__APP_VERSION__:'"0.15.7-prototype.2"'},logLevel:'warning'};
-await build({...shared,entryPoints:[here+'/app.mjs'],format:'esm',outfile:output+'/app.js'});
-await build({...shared,entryPoints:[here+'/worker.ts'],format:'iife',outfile:output+'/worker.js'});
-for(const name of ['index.html','style.css','README.md','PROJECT-BRIDGE.md'])await copyFile(here+'/'+name,output+'/'+name);
-await copyFile(here+'/runtime-manifest.json',output+'/toolchain/manifest.json');
-const shell=['index.html','app.js','worker.js','style.css','README.md','PROJECT-BRIDGE.md','toolchain/NOTICE.json'];
-const hash=createHash('sha256');for(const name of shell)hash.update(await readFile(output+'/'+name));
-const cache='labos-avr-prototype-shell-'+hash.digest('hex').slice(0,16);
-await writeFile(output+'/sw.js',`const CACHE=${JSON.stringify(cache)}, FILES=${JSON.stringify(shell)};
-self.addEventListener('install',e=>e.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES.map(p=>new URL(p,self.registration.scope).href));await self.skipWaiting();})()));
-self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch',e=>{const url=new URL(e.request.url);if(e.request.method!=='GET'||!url.href.startsWith(self.registration.scope))return;const relative=url.href.slice(self.registration.scope.length).split('?')[0];if(relative!==''&&!FILES.includes(relative))return;e.respondWith((async()=>{const cache=await caches.open(CACHE);const hit=await cache.match(new URL(relative||'index.html',self.registration.scope).href);return hit||fetch(e.request);})());});
-`);
-console.log('Prototype built:',output);
+await buildShell({here,output});

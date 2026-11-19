@@ -46,7 +46,7 @@ test('real Labos projects compile and simulate their own circuit for Uno and Nan
 test('unsupported targets, libraries, extra ino, src paths and two-node projects fail without mutation',()=>{
   const p=fixture(),before=JSON.stringify(p);
   for(const files of [
-    {'arduino-libraries.json':libraryManifest([{name:'Servo',version:'1.2.2'}])},
+    {'arduino-libraries.json':libraryManifest([{name:'Servo',version:'1.2.2'}]).replace('1.2.2','9.9.9')},
     {'arduino-libraries.json':'broken'}, {'other.ino':'void helper(){}'}, {'src/helper.cpp':'int helper(){return 1;}'},
   ])assert.throws(()=>projectInput({...p,files:{...p.files,...files}}));
   assert.throws(()=>projectInput(newProject(undefined,'S3',S3,'arduino-cpp')),/Uno/);

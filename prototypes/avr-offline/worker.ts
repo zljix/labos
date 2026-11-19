@@ -26,7 +26,7 @@ self.onmessage=async({data})=>{
   busy=true;
   try {
     if(data.type==='compile')postMessage({type:'compiled',result:await compileLocal(data.input)});
-    else if(data.type==='simulate')postMessage({type:'simulated',result:await simulate(data.input,data.result,data.project)});
+    else if(data.type==='simulate')postMessage({type:'simulated',result:await simulate(data.input,data.result,data.project,data.durationMs)});
     else throw Error('Nepoznata radnja.');
   }catch(error){postMessage({type:'error',message:error instanceof Error?error.message:String(error)});}
   finally{busy=false;}

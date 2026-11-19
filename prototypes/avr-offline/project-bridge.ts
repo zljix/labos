@@ -1,6 +1,6 @@
 import {parseProject,clone,type Project} from '../../src/project/model';
 import {UNO,NANO} from '../../src/boards/profiles';
-import {buildInput} from '../../public/avr-contract.mjs';
+import {buildInput,libraryManifest,AVR_LIBRARY_FILE} from '../../public/avr-contract.mjs';
 import {normalizeInput,fingerprint,validateResult} from './compiler.mjs';
 
 export const BUNDLE_FORMAT='labos-avr-offline-project';
@@ -13,17 +13,17 @@ export function projectInput(value:unknown){
   if(project.radio)throw Error('Prototip još ne podržava projekte s dva čvora.');
   if(project.language!=='arduino-cpp'||(project.board.id!==UNO&&project.board.id!==NANO))throw Error('Uvezi Arduino C/C++ projekt za Uno ili klasični Nano.');
   const source=buildInput(project);
-  if(source.toolchain.libraries.length)throw Error('Projekt koristi dodatne biblioteke koje offline prototip još ne podržava. Projekt nije izmijenjen.');
-  return {project,input:normalizeInput({board:project.board.id===NANO?'nano':'uno',files:source.files})};
+  return {project,input:normalizeInput({board:project.board.id===NANO?'nano':'uno',files:source.files,libraries:source.toolchain.libraries})};
 }
 
 export function updateProject(value:unknown,input:any):Project{
   const current=projectInput(value),normalized=normalizeInput(input);
   if(normalized.board!==current.input.board)throw Error('Pločica uvezenog projekta ne može se promijeniti bez prilagodbe sklopa.');
-  if(JSON.stringify(normalized.files)===JSON.stringify(current.input.files))return clone(current.project);
+  if(JSON.stringify(normalized)===JSON.stringify(current.input))return clone(current.project);
   const next=clone(current.project);
   for(const name of Object.keys(current.input.files))delete next.files[name];
   Object.assign(next.files,normalized.files);
+  if(JSON.stringify(normalized.libraries)!==JSON.stringify(current.input.libraries))next.files[AVR_LIBRARY_FILE]=libraryManifest(normalized.libraries);
   if(!Object.hasOwn(next.files,next.settings.activeFile))next.settings.activeFile='main.ino';
   next.revision++;next.updatedAt=new Date().toISOString();
   // Existing build/submission files remain byte-for-byte intact. Their own

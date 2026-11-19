@@ -1,3 +1,4 @@
+import {normalizeLibraries,libraryPaths} from './libraries.mjs';
 import runtime from './runtime-manifest.json' with {type:'json'};
 import {parseHex, sha256} from '../../public/avr-contract.mjs';
 
@@ -20,7 +21,7 @@ export function normalizeInput(input) {
   }
   if (!Object.hasOwn(files, 'main.ino')) throw Error('Nedostaje main.ino.');
   if (new Set(paths.map(p=>p.toLowerCase())).size !== paths.length) throw Error('Dvostruka putanja.');
-  return {profile:PROFILE, upstream:UPSTREAM, packageHash:PACKAGE_HASH, board:input.board, files};
+  return {profile:PROFILE, upstream:UPSTREAM, packageHash:PACKAGE_HASH, board:input.board, libraries:normalizeLibraries(input.libraries), files};
 }
 export const fingerprint = input => sha256(JSON.stringify(normalizeInput(input)));
 
@@ -78,7 +79,8 @@ export async function compile(input, {sdk, factory, progress=()=>{}}) {
   for (const [path,content] of Object.entries(input.files)) files.set('/project/'+path,encoder.encode(content));
   files.set('/project/sketch.cpp',encoder.encode('#include <Arduino.h>\n#line 1 "main.ino"\n'+input.files['main.ino']));
   const tool=(name,args,output)=>runTool(name,args,output,{files,factory,progress,diagnostics,timings});
-  const common=compilerFlags(input.board);
+  const libraries=libraryPaths(input.board,input.libraries);
+  const common=[...compilerFlags(input.board),...libraries.includes];
   const sources=['sketch.cpp',...Object.keys(input.files).filter(p=>/\.(cpp|c)$/.test(p))], objects=[];
   for (let i=0;i<sources.length;i++) {
     const source=sources[i], cpp=source.endsWith('.cpp'), asm='/project/unit'+i+'.s', obj='/project/unit'+i+'.o';
@@ -86,7 +88,7 @@ export async function compile(input, {sdk, factory, progress=()=>{}}) {
     await tool('avr-as',['-mmcu=atmega328p','-mgcc-isr','-o',obj,asm],obj); objects.push(obj);
   }
   const avr='/sysroot/avr/lib/avr5', core='/sysroot/arduino/boards/'+input.board;
-  const elf=await tool('avr-ld',['-m','avr5','-T','/sysroot/avr/lib/ldscripts/avr5.x','--gc-sections','-o','/project/result.elf',avr+'/crtatmega328p.o',...objects,'-L'+avr,'-L/sysroot/libgcc/avr5','-L'+core,'--start-group','-lcore','-lgcc','-lm','-lc','-latmega328p','--end-group'],'/project/result.elf');
+  const elf=await tool('avr-ld',['-m','avr5','-T','/sysroot/avr/lib/ldscripts/avr5.x','--gc-sections','-o','/project/result.elf',avr+'/crtatmega328p.o',...objects,'-L'+avr,'-L/sysroot/libgcc/avr5','-L'+core,'--start-group',...libraries.archives,'-lcore','-lgcc','-lm','-lc','-latmega328p','--end-group'],'/project/result.elf');
   const staticRamBytes=elfStaticRAM(elf);
   if (staticRamBytes>2048) throw Error('Program prelazi 2048 B statičkog SRAM-a.');
   const hex=new TextDecoder().decode(await tool('objcopy',['-O','ihex','-R','.eeprom','/project/result.elf','/project/result.hex'],'/project/result.hex'));

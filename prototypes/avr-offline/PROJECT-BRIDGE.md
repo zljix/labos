@@ -12,7 +12,7 @@ nepromijenjeni. Ovo nije dovršena integracija u glavno sučelje Labosa.
 1. U Labosu preuzmi Arduino Uno/Nano projekt JSON.
 2. U prototipu odaberi **Uvezi projekt JSON**. Učitavaju se izvorne datoteke,
    a sklop, bilješke i ostale datoteke čuvaju se zajedno s njima.
-3. Promijeni izvor, odaberi **Prevedi offline**, zatim **Pokreni 1,2 s**.
+3. Promijeni izvor, odaberi **Prevedi offline**, zatim **Pokreni simulaciju**.
    Koristi se uvezeni sklop; graf prikazuje samo D13, a struje LED-ica i
    poruke sklopa prikazuju se uz podatke projekta.
 4. **Preuzmi projekt JSON** vraća standardni Labos projekt s izmijenjenim
@@ -43,10 +43,10 @@ ne mijenja se.
   zahtijeva prevođenje svojim podržanim prevoditeljem; ovaj prototip ne
   daje pravo na automatske školske bodove.
 - Nepodržani projekti odbijaju se prije zamjene trenutačnog rada: S3,
-  MicroPython, dva čvora, dodatne biblioteke, više `.ino` datoteka, `src/`
+  MicroPython, dva čvora, biblioteke izvan zaključanog popisa, više `.ino` datoteka, `src/`
   putanje ili prekoračena ograničenja. JSON uvoz ograničen je na 2 MiB;
   vrijede i izvorna ograničenja Labos projekta te 32 izvora / 256 KiB prototipa.
-- Simulacija je ograničena na 1,2 s bez upravljanja ulazima tijekom izvođenja.
+- Simulacija je ograničena na odabranih 1,2, 3 ili 5 s bez upravljanja ulazima tijekom izvođenja.
   Projekti s isključenim ili zamijenjenim napajanjem odbijaju simulaciju.
   Prihvat formata projekta nije potvrda rada svih periferija ili vježbi.
 
@@ -69,4 +69,10 @@ generira Node test prije browser faze. Rezultat CI provjere mora biti
 potvrđen zapisnikom za točan commit; sama skripta nije dokaz uspjeha.
 
 Otvoreni ostaju uvjeti distribucije upstream alata, mjerenja na školskom
-računalu i fizičkim mobitelima te biblioteke i integracija u glavno sučelje.
+računalu i fizičkim mobitelima te integracija u glavno sučelje. Podršku bibliotekama opisuje [LIBRARIES.md](LIBRARIES.md).
+
+Prototip 03 preuzima odabir biblioteka iz `arduino-libraries.json`. Izmjena
+odabira u sučelju odbacuje stari rezultat i u standardnom izvozu ažurira
+samo taj manifest, izvore i metapodatke revizije. Neizmijenjeni manifest
+ostaje byte-for-byte očuvan. Ovisnost DallasTemperature → OneWire i
+međusobno isključivi U8g2 paketi provjeravaju se prije izgradnje.
