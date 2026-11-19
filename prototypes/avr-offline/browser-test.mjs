@@ -81,11 +81,12 @@ try{
   evidence.checks.push('unrelated project and cache preserved; no cache clearing');
   await page.evaluate(async()=>{
     const name=(await caches.keys()).find(n=>n.startsWith('labos-avr-prototype-1-')),c=await caches.open(name),url=new URL('toolchain/cc1plus.js',location.href).href;
-    window.savedCompilerResponse=await (await c.match(url)).arrayBuffer();window.savedCompilerCache=name;
+    const response=await c.match(url);window.savedCompilerHeaders=[...response.headers];
+    window.savedCompilerResponse=await response.arrayBuffer();window.savedCompilerCache=name;
     await c.put(url,new Response('corrupted'));
   });
   await page.locator('#compile').click();await waitDone();assert.equal((await state()).result,null);assert.match(await page.locator('#diagnostics').textContent(),/Oštećena|nepotpuna/);
-  await page.evaluate(async()=>{const c=await caches.open(window.savedCompilerCache);await c.put(new URL('toolchain/cc1plus.js',location.href).href,new Response(window.savedCompilerResponse,{headers:{'Content-Type':'text/javascript'}}));});
+  await page.evaluate(async()=>{const c=await caches.open(window.savedCompilerCache);await c.put(new URL('toolchain/cc1plus.js',location.href).href,new Response(window.savedCompilerResponse,{headers:window.savedCompilerHeaders}));});
   await compile();assert.match((await simulate()).serial,/PERSISTENT_REOPEN_982/);
   evidence.checks.push('corrupt cached compiler rejected; restored package compiles again; source survives');
   await page.screenshot({path:resolve('.build/avr-prototype-desktop.png'),fullPage:true});

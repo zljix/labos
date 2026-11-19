@@ -1,4 +1,4 @@
-import {installPackage,packageStatus} from './package.mjs';
+import {installPackage,packageStatus,PACKED_BYTES} from './package.mjs';
 import {validateResult,normalizeInput} from './compiler.mjs';
 import {EXAMPLES} from './examples.mjs';
 const $=id=>document.getElementById(id);
@@ -59,14 +59,15 @@ async function runJob(type) {
   worker.postMessage({type,input:snapshot,result});
 }
 $('compile').onclick=()=>runJob('compile');$('run').onclick=()=>runJob('simulate');
+async function storageInfo(){try{const s=await navigator.storage.estimate();$('storage-info').textContent=`Zauzeto na ovoj adresi: ${(s.usage/1048576).toFixed(1)} MiB · kvota: ${(s.quota/1048576).toFixed(1)} MiB. Paket se čuva komprimiran.`;}catch{$('storage-info').textContent='Paket se čuva komprimiran.';}}
 $('prepare').onclick=async()=>{
   $('prepare').disabled=true;$('compile').disabled=true;
   try {
     await shellReady;
     await installPackage((done,total)=>{$('progress').value=done/total;$('package-status').textContent=`Spremam prevoditelj: ${(done/1048576).toFixed(1)} / ${(total/1048576).toFixed(1)} MiB`;});
     ready=true;$('progress').value=1;$('package-status').textContent='Aplikacija i prevoditelj spremljeni su. Možeš isključiti mrežu.';
-  }catch(e){ready=false;$('package-status').textContent=e.message;}
-  finally{$('prepare').disabled=false;$('compile').disabled=!ready||!!worker;}
+  }catch(e){ready=false;$('package-status').textContent=e.name==='QuotaExceededError'?'Nema dovoljno prostora u pregledniku. Projekt je sačuvan; pripremu paketa možeš nastaviti kada bude prostora.':e.message;}
+  finally{$('prepare').disabled=false;$('compile').disabled=!ready||!!worker;await storageInfo();}
 };
 const network=()=>{$('network').textContent=navigator.onLine?'Mreža je uključena':'Mreža je isključena';};
 window.addEventListener('online',network);window.addEventListener('offline',network);network();tabs();
@@ -78,5 +79,6 @@ const shellReady=(async()=>{
 // Read-only evidence hook for repeatable prototype verification, never an execution shortcut.
 window.labosPrototype={getState:()=>structuredClone({input:input(),result,simulation,ready,busy:!!worker})};
 try{await shellReady;await packageStatus();ready=true;$('progress').value=1;$('package-status').textContent='Aplikacija i prevoditelj dostupni su iz spremljenog paketa.';}
-catch(e){$('package-status').textContent='Za prvi offline rad pripremi paket (oko 60 MiB).';}
+catch(e){$('package-status').textContent=`Za prvi offline rad pripremi paket (${(PACKED_BYTES/1048576).toFixed(1)} MiB).`;}
 $('compile').disabled=!ready;
+await storageInfo();

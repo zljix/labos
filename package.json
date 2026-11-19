@@ -121,7 +121,8 @@
     "prototype:avr:build": "node prototypes/avr-offline/build.mjs",
     "prototype:avr:test": "node --import tsx --test prototypes/avr-offline/compiler.test.mjs",
     "prototype:avr:browser": "node prototypes/avr-offline/browser-test.mjs",
-    "prototype:avr:worker": "node --test prototypes/avr-offline/worker-harness.test.mjs"
+    "prototype:avr:worker": "node --test prototypes/avr-offline/worker-harness.test.mjs",
+    "prototype:avr:package": "node --test prototypes/avr-offline/package.test.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",

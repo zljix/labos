@@ -4,9 +4,10 @@ Osnova: `zljix/labos`, 0.15.7-beta.1, commit `b5bc958`.
 Korisnik je odredio `labosv2` kao odredište buduće objave nadograđenog Labosa.
 Ovaj prototip je zaseban eksperiment na razvojnoj grani: ne mijenja glavnu
 aplikaciju, njezin service worker, postojeći ugovor rezultata ni glavne grane.
-**Status:** prevođenje i simulacija potvrđeni su u Node testovima. Browser
-prihvat je pripremljen, ali nije izvršen do kraja zbog ograničenja testnog
-okruženja. Potpuni offline rad preglednika još nije potvrđen; vidi EVIDENCE.md.
+**Status:** prevođenje i simulacija potvrđeni su u Node testovima i stvarnom
+pregledniku. U browseru su prošli novi izvor, Uno/Nano, prekidi i ponovno
+otvaranje kartice uz ugašen poslužitelj. Potpuna mrežna izolacija i ponovno
+pokretanje cijelog browsera ostaju otvoreni; vidi EVIDENCE.md.
 
 ## Pokretanje
 
@@ -37,6 +38,10 @@ Za buduću javnu aplikaciju potreban je HTTPS. Ovo još nije integrirana beta.
 - Arduino jezgra, `pinMode`, `digitalWrite`, `delay`, `millis`, `Serial`.
 - Izvor, pločica, profil prototipa i inačica alata ulaze u SHA-256 ulaza.
 - Svako prevođenje provjerava SHA-256 svih spremljenih alata i SDK-a.
+- Paket se preuzima i sprema komprimiran (oko 17 MiB umjesto 60,5 MiB).
+  Raspakiravanje je ograničeno očekivanom veličinom i provjerom SHA-256.
+- Nastavak pripreme pretvara ranije spremljene vlastite nekomprimirane zapise
+  na istim ključevima; ne briše predmemorije, projekte ni nepovezane zapise.
 - Prekid/izmjena izvora prekidaju Worker i odbacuju prethodni rezultat.
 - Sintaksna pogreška ne pokreće prethodni HEX; izvor ostaje spremljen.
 - Odvojeno spremanje prototipa; nema brisanja tuđih predmemorija i projekata.
@@ -93,15 +98,17 @@ izgrađeni iz izvora u ovom okruženju.
 ```sh
 npm run prototype:avr:test
 npm run prototype:avr:worker
+npm run prototype:avr:package
 npm run prototype:avr:browser
 ```
 
-Prve dvije naredbe ne zamjenjuju stvarni browser prihvat. Browser provjera
+Prve tri naredbe ne zamjenjuju stvarni browser prihvat. Browser provjera
 namijenjena je razvojnom računalu koje dopušta pokretanje Chromiuma. Koristi
 Playwright i Chromium, vlastiti trajni profil u
 `.build/avr-prototype-profile`, bez čišćenja predmemorije. Varijable
 `PLAYWRIGHT_MODULE` i `CHROMIUM_PATH` mogu odrediti lokalne alate. U ovom
 radnom okruženju Playwright je dostupan iz primarnog runtimea.
-Izvještaj je `.build/avr-offline-evidence.json`; sažetak mjerenja i preostali
-koraci vode se u `EVIDENCE.md`. Mjerenja iz ovog okruženja nisu mjerenja na
+Automatski izvještaj je `.build/avr-offline-evidence.json`; ručno provedeni
+browser koraci zabilježeni su u `browser-evidence.json`. Sažetak mjerenja i
+preostali koraci vode se u `EVIDENCE.md`. Mjerenja iz ovog okruženja nisu mjerenja na
 školskom i5-6600 niti potvrda mobilne podrške.

@@ -10,17 +10,18 @@ const root=resolve('.build/avr-offline');
 const bundle=await readFile(root+'/worker.js','utf8');
 async function harness({corrupt=false}={}) {
   const blobs=new Map();let sequence=0,resolveMessage;
-  class BrowserBlob {constructor(parts){this.parts=parts;}}
+  class BrowserBlob extends Blob {constructor(parts,options){super(parts,options);this.parts=parts;}}
   class BrowserURL extends URL {
     static createObjectURL(blob){const key='blob:https://prototype/'+(++sequence);blobs.set(key,blob);return key;}
     static revokeObjectURL(url){blobs.delete(url);}
   }
-  const scope={console,performance,crypto,structuredClone,WebAssembly,TextEncoder,TextDecoder,Uint8Array,ArrayBuffer,DataView,URL:BrowserURL,Blob:BrowserBlob,Response,atob,btoa,setTimeout,clearTimeout,
+  const scope={console,performance,crypto,structuredClone,WebAssembly,TextEncoder,TextDecoder,Uint8Array,ArrayBuffer,DataView,URL:BrowserURL,Blob:BrowserBlob,Response,CompressionStream,DecompressionStream,atob,btoa,setTimeout,clearTimeout,
     WorkerGlobalScope:class {},location:{href:'https://prototype/worker.js'},
     fetch:()=>{throw Error('Network fetch forbidden in Worker harness');},
     caches:{open:async()=>({match:async url=>{
       const name=new URL(url).pathname.split('/').pop();
-      return new Response(corrupt&&name==='cc1plus.js'?'corrupted':await readFile(root+'/toolchain/'+name));
+      if(corrupt&&name==='cc1plus.js')return new Response('corrupted');
+      return new Response(await readFile(root+'/toolchain/'+name+'.gz'),{headers:{'X-Labos-Compression':'gzip'}});
     }})},
     postMessage:message=>{if(message.type!=='progress')resolveMessage?.(message);}
   };

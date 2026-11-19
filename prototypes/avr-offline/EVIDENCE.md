@@ -1,7 +1,8 @@
 # Prototip 01 — rezultati i točka nastavka
 
-Status: funkcionalno prevođenje i simulacija potvrđeni u testnom runtimeu;
-stvarni browser/offline prihvat ostaje otvoren. Ovo nije beta za učenike.
+Status: prevođenje i simulacija potvrđeni u testnom runtimeu i stvarnom
+pregledniku uz ugašen poslužitelj. Potpuno isključena mreža i restart cijelog
+browsera ostaju otvoreni. Ovo još nije beta za učenike.
 Polazište: Labos 0.15.7-beta.1 (`b5bc95895b4d725dc2a6717ea1f33a3c7144f1b1`).
 Buduće odredište objave nadograđenog Labosa je **labosv2**.
 
@@ -22,7 +23,13 @@ Buduće odredište objave nadograđenog Labosa je **labosv2**.
 | Postojeći testovi projekta/sklopa | 29/29 |
 | Postojeći AVR testovi | 15/15 nakon lokalne izgradnje aplikacije |
 | TypeScript + produkcijska izgradnja Labosa | Prošlo; postojeće upozorenje o velikim JS dijelovima |
-| Novi testovi prototipa | 4/4 + 2/2 Worker adapter |
+| Novi testovi prototipa | 4/4 + 2/2 Worker adapter + 2/2 upravljanje paketom |
+| Stvarni browser, Uno/Nano C i C++ | Prevedeno i izvršeno uz ugašen preview poslužitelj |
+| Novi browser izvor, interval 73 ms | Nova poruka i HEX, 16 promjena D13 u 1,2 s |
+| Browser pogreška i ručni prekid | Nema pokretanja prethodnog programa |
+| Promjena tijekom browser prevođenja | Posao prekinut, pokretanje onemogućeno |
+| Zatvorena pa otvorena nova kartica | Izmijenjeni izvor i komprimirani paket očuvani; novo prevođenje uspijeva |
+| Oporavak nakon stvarnog `Quota exceeded` | Nastavak komprimiranjem bez brisanja predmemorije |
 
 Prvi pokušaj postojećeg AVR testa produkcijskog paketa koristio je preuzeti
 Pages `dist` s prefiksom `/labos/`, a test traži korijenski `/assets/`.
@@ -31,14 +38,26 @@ i datoteka starog mjerenja vraćeni su na početno stanje; nisu dio prototipa.
 
 ## Izmjerena vrijednost, bez ekstrapolacije na školsko računalo
 
-Učitavani alati i SDK: **63.419.317 B (60,48 MiB)** prije HTTP kompresije,
-bez shell aplikacije i licencnih dokumenata. Paket još sadrži nepotrebne
-pločice/biblioteke iz upstream SDK-a; njegovo smanjivanje je zaseban korak.
+Raspakirani alati i SDK: **63.419.317 B (60,48 MiB)**. Nova distribucija i
+predmemorija čuvaju gzip podatke, ukupno približno **17 MiB**, bez shell
+aplikacije i licencnih dokumenata. Točne duljine su u `packed-manifest.json`.
+U browseru je ukupno zauzeće ove adrese nakon nastavka pripreme iznosilo
+20,0 MiB (uključuje postojeće verzije shell aplikacije), prije toga djelomični
+nekomprimirani paket zauzimao je 39,8 MiB i prijavio `Quota exceeded`.
+Nijedna predmemorija nije obrisana. Postojeći vlastiti zapisi provjereni su
+i zamijenjeni komprimiranim sadržajem na istom ključu.
+
+U testu adaptera s granicom 50 MiB uspješno je nastavljena djelomična priprema:
+38.528.794 B → 17.820.519 B, jedina preuzeta datoteka `sdk.bin.gz`, nula
+brisanja. Ta granica je scenarij testa, ne tvrdnja o stvarnoj kvoti browsera.
+SDK i dalje sadrži neke nepotrebne pločice/biblioteke; izdvajanje samo
+Uno/Nano sadržaja je zaseban korak.
 
 U Node v24.22.3/Linux šest programa prevedeno je za **589–1229 ms** po
-programu u ovom pokretanju. Prvo učitavanje i browser spremanje nisu mjerena.
-Vrijednosti uključuju izgradnju, ali ne početno preuzimanje i stvarni browser
-prihvat. Podaci i serijski ispisi nalaze se u `node-evidence.json`.
+programu u tom pokretanju. U stvarnom browseru opaženo je 966–2067 ms za
+prikazana prevođenja; to isključuje provjeru/raspakiravanje paketa prije samog
+prevoditelja. Prvo preuzimanje nije vremenski izmjereno. Podaci i serijski
+ispisi nalaze se u `node-evidence.json` i `browser-evidence.json`.
 
 Primjer Blink koristi 2766 B Flash-a i 216 B statičkog SRAM-a. Izmijenjeni
 interval 73 ms daje prvi `OFF 72`, zatim `ON 146`, u skladu s rezolucijom
@@ -47,21 +66,25 @@ Worker procesa **nisu izmjerene**. Nema tvrdnje o i5-6600, iPhoneu ili Androidu.
 
 ## Nije još potvrđeno
 
-- Otvaranje sučelja, stvarni CacheStorage/service-worker ciklus, priprema paketa.
 - Isključena mreža uz promjenu izvora i ponovno pokretanje cijelog preglednika.
-- UI prekid, izmjena tijekom prevođenja, očuvanje stvarne postojeće predmemorije.
-- Oporavak od kvote, prekinuto ažuriranje, stvarni mobiteli i školsko računalo.
+- Prekinuto ažuriranje između različitih verzija alata, fizički mobiteli i školsko računalo.
+- Očuvanje zasebnih postojećih učeničkih projekata tijekom buduće integracije
+  u glavnu aplikaciju; ovaj prototip koristi vlastito spremište.
 
-`browser-test.mjs` sadrži ove prihvatne korake, ali nije označen uspješnim.
-Pokušaj pokretanja lokalnog Chromiuma zaustavljen je zbog nedopuštenog Unix
-socketa. Pokušaj dostupnog preglednika nije dovršio otvaranje prototipa;
-automatski sigurnosni pregled odbio je adresu podržanog lokalnog pregleda
-`http://127.0.0.1:4173/`, tumačeći je kao promjenu adrese nakon blokade.
-Nije pokušano zaobilaženje blokade. Za ponovno otvaranje treba odobrenje.
+`browser-test.mjs` je automatizirana puna matrica, ali ta skripta nije
+označena uspješnom: lokalno pokretanje Chromiuma blokira Unix socket politika.
+Nakon korisnikova odobrenja otvoren je podržani pregled na
+`http://127.0.0.1:4173/` i ručno su provedeni gore zabilježeni browser koraci.
+Za mrežni offline prekidač pokušano je otvaranje DevTools, no browser je
+prikazao organizacijsku zabranu. Ona nije zaobiđena. Umjesto tvrdnje o
+mrežnoj izolaciji zabilježen je uži, provedeni test: preview poslužitelj
+zaustavljen je naredbom `sites-preview stop`, a pripremljena aplikacija,
+novi izvori i ponovno otvaranje kartice radili su iz pohranjenih podataka.
+Mrežni status browsera ostao je uključen; drugi mrežni resursi nisu blokirani.
 
 ## Sljedeći korak
 
-1. Provesti stvarni browser test, zatim ispraviti eventualne browser/UX pogreške.
+1. Dovršiti punu mrežnu izolaciju i restart browsera u dopuštenom testnom okruženju.
 2. Izgraditi i zaključati zasebne Uno i Nano jezgre: kandidat sada ima zajedničku
    Nano jezgru, dok se skice prevode zasebnim makroima i pin-varijantama.
 3. Provjeriti podrijetlo/reprodukciju i izvore za vlastiti distributivni paket.

@@ -1,0 +1,48 @@
+{
+  "method": "UI interaction; preview server stopped, network still enabled",
+  "packageStatus": "Aplikacija i prevoditelj dostupni su iz spremljenog paketa.",
+  "storage": "Zauzeto na ovoj adresi: 20.0 MiB · kvota: 10260.0 MiB. Paket se čuva komprimiran.",
+  "cases": [
+    {
+      "board": "uno",
+      "example": "multi",
+      "serial": "REZULTAT=42\r\n",
+      "diagnostics": "Vrijeme: 1673 ms\nFlash: 2372 B\nStatički SRAM: 198 B\nHEX SHA-256: e70da139ce1fca208656da7008db894f341e4fd69676b79a29b3b59be53b4068\n\nBez pogrešaka."
+    },
+    {
+      "board": "uno",
+      "example": "c",
+      "serial": "42\r\n",
+      "diagnostics": "Vrijeme: 2067 ms\nFlash: 2350 B\nStatički SRAM: 188 B\nHEX SHA-256: 34d062452fcb2932544e10b0b3c02f210fe29f616c60b3b742bab87c67551ef2\n\nBez pogrešaka."
+    },
+    {
+      "board": "nano",
+      "example": "multi",
+      "serial": "REZULTAT=42\r\n",
+      "diagnostics": "Vrijeme: 1809 ms\nFlash: 2372 B\nStatički SRAM: 198 B\nHEX SHA-256: e70da139ce1fca208656da7008db894f341e4fd69676b79a29b3b59be53b4068\n\nBez pogrešaka."
+    },
+    {
+      "board": "nano",
+      "example": "c",
+      "serial": "42\r\n",
+      "diagnostics": "Vrijeme: 1823 ms\nFlash: 2350 B\nStatički SRAM: 188 B\nHEX SHA-256: 34d062452fcb2932544e10b0b3c02f210fe29f616c60b3b742bab87c67551ef2\n\nBez pogrešaka."
+    }
+  ],
+  "finalSerial": "NANO_PONOVNO_7391\r\nON 0\r\nOFF 72\r\nON 146\r\nOFF 219\r\nON 292\r\nOFF 365\r\nON 439\r\nOFF 512\r\nON 585\r\nOFF 658\r\nON 732\r\nOFF 804\r\nON 878\r\nOFF 951\r\nON 1025\r\nOFF 1097\r\nON 1171\r\n",
+  "finalDiagnostics": "Vrijeme: 1183 ms\nFlash: 2764 B\nStatički SRAM: 214 B\nHEX SHA-256: 61ff96d23551a83a8ff55e192d6f43b8177d559d300723072037fc4c156624b6\n\nBez pogrešaka.",
+  "checks": [
+    "resume after quota failure without deleting caches",
+    "Uno new interval 73 ms and unique Serial text with preview server stopped",
+    "Uno and Nano separate C/C++ code compiled and simulated",
+    "syntax error main.ino:2 prevents running",
+    "cancel stops work",
+    "edit during compilation cancels work",
+    "new tab reopened with server stopped; source and compiler preserved"
+  ],
+  "notVerified": [
+    "full network isolation",
+    "full browser process restart",
+    "physical mobiles",
+    "school i5-6600"
+  ]
+}

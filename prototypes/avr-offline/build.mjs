@@ -1,14 +1,16 @@
 import {build} from 'esbuild';
-import {readFile,writeFile,mkdir,copyFile,access} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,copyFile,access,unlink} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import {gzipSync} from 'node:zlib';
 const here=dirname(fileURLToPath(import.meta.url)), root=resolve(here,'../..');
 const output=resolve(root,'.build/avr-offline'), assets=resolve(root,'.build/avr-toolchain');
 await mkdir(output+'/toolchain',{recursive:true});await mkdir(assets,{recursive:true});
 const upstream=JSON.parse(await readFile(here+'/upstream-manifest.json','utf8'));
 const names=Object.keys(upstream.files).filter(n=>n!=='ctags.js');
+const packed={};
 for(const name of names){
   const metadata=upstream.files[name], path=assets+'/'+name;
   let valid=false;
@@ -22,8 +24,14 @@ for(const name of names){
     if(bytes.length!==metadata.bytes||createHash('sha256').update(bytes).digest('hex')!==metadata.sha256)throw Error('Integrity failed: '+name);
     await writeFile(path,bytes);
   }
-  await copyFile(path,output+'/toolchain/'+name);
+  // The distributable only needs compressed bytes. Keep the raw build cache
+  // in .build/avr-toolchain, not a second public copy in the application.
+  await unlink(output+'/toolchain/'+name).catch(e=>{if(e.code!=='ENOENT')throw e;});
+  const compressed=gzipSync(await readFile(path),{level:9});
+  await writeFile(output+'/toolchain/'+name+'.gz',compressed);
+  packed[name]={bytes:compressed.length};
 }
+await writeFile(here+'/packed-manifest.json',JSON.stringify(packed,null,2)+'\n');
 // Notices and licences are fetched from the exact upstream release, outside the app bundle.
 for(const name of ['NOTICE.json','licenses.tar.gz']){
   const path=assets+'/'+name;
