@@ -130,6 +130,43 @@ try{
     const preserved=await page.evaluate(async()=>({project:localStorage.getItem('labos-isolated-sentinel'),cache:await (await (await caches.open('labos-isolated-sentinel')).match('/sentinel')).text()}));
     assert.deepEqual(preserved,{project:'preserve',cache:'preserve'});
     evidence.checks.push('Second full browser restart inside network isolation, another new source compiled, unrelated storage intact');
+    // A real Labos project, supplied through the same file input as a user.
+    // Its source is changed only inside the isolated network namespace.
+    const project=JSON.parse(await readFile('.build/avr-project-fixture.json','utf8'));
+    const upload=async value=>{
+      await page.locator('#project-file').setInputFiles({name:'projekt.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))});
+    };
+    await upload(project);await page.waitForFunction(id=>window.labosPrototype.getState().project?.id===id,project.id);
+    assert(await page.locator('#board').isDisabled());assert(await page.locator('#example').isDisabled());
+    assert.equal((await state()).simulation,null,'Import never starts a program');
+    const changed=project.files['main.ino'].replace('PROJECT_BRIDGE','PROJECT_'+nonce);
+    await page.locator('#code').fill(changed);await compile();
+    const projectSimulation=await simulate();assert.match(projectSimulation.serial,new RegExp('PROJECT_'+nonce));
+    assert.equal(projectSimulation.projectId,project.id);assert(projectSimulation.lastFrame.leds.led1.currentMa>4);
+    assert.deepEqual((await state()).project.circuit,project.circuit);
+    async function downloadJSON(button){
+      const pending=page.waitForEvent('download');await page.locator(button).click();const download=await pending;
+      assert.equal(await download.failure(),null);return JSON.parse(await readFile(await download.path(),'utf8'));
+    }
+    const exported=await downloadJSON('#export-project');
+    assert.equal(exported.files['main.ino'],changed);assert.equal(exported.files['biljeske.md'],project.files['biljeske.md']);
+    assert.equal(exported.files['avr-build.json'],project.files['avr-build.json']);assert.deepEqual(exported.circuit,project.circuit);
+    const bundle=await downloadJSON('#export-result');assert.equal(bundle.format,'labos-avr-offline-project');
+    assert.equal(bundle.result.hexHash,(await state()).result.hexHash);
+    const beforeRejected=await state();
+    await upload({...exported,files:{...exported.files,'other.ino':'void helper(){}'}});
+    await page.waitForFunction(()=>document.querySelector('#project-status').textContent.includes('other.ino'));
+    assert.deepEqual(await state(),beforeRejected,'Rejected project import must preserve current state');
+    await page.locator('#code').fill(changed+'\n// changed after export');assert(await page.locator('#run').isDisabled());
+    await upload(bundle);await page.waitForFunction(()=>!!window.labosPrototype.getState().result);
+    assert.equal((await state()).simulation,null);assert.equal((await state()).input.files['main.ino'],changed);
+    await simulate();await closeBrowser();await open();
+    await page.waitForFunction(()=>window.labosPrototype.getState().ready,null,{timeout:30000});
+    const restored=await state();assert.deepEqual(restored.project,exported);assert.equal(restored.result,null);
+    await page.locator('#code').fill(changed.replace('PROJECT_'+nonce,'PROJECT_REOPEN_'+nonce));
+    await compile();assert.match((await simulate()).serial,new RegExp('PROJECT_REOPEN_'+nonce));
+    evidence.checks.push('Real Labos project imported, edited, compiled and simulated with its own circuit in isolation; source and result exports round-trip, unsupported import leaves state intact, full restart preserves project and permits new compile');
+    evidence.projectBridge={projectId:project.id,circuitPreserved:true,notesPreserved:true,legacyBuildPreserved:true,importDoesNotRun:true,exportRoundTrip:true,restartPreserved:true};
     await page.screenshot({path:reports+'/isolated-desktop.png',fullPage:true});
     await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:reports+'/isolated-mobile-layout.png',fullPage:true});

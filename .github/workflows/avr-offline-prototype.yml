@@ -40,6 +40,7 @@ jobs:
           npm run prototype:avr:worker
           npm run prototype:avr:package
           node --test prototypes/avr-offline/network-proof.test.mjs
+          node --import tsx --test prototypes/avr-offline/project-bridge.test.ts
       - name: Spremi paket i zatvori preglednik
         run: node prototypes/avr-offline/isolated-browser-test.mjs prepare
       - name: Novi izvori i restart bez mrežnih sučelja

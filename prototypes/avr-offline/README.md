@@ -12,6 +12,11 @@ Dokaz i preostale granice prihvata: [EVIDENCE-03.md](EVIDENCE-03.md).
 Prototip 02 dodaje zasebnu izgradnju jezgri, manji SDK i identitet paketa.
 Ranije provjere sačuvane su u EVIDENCE-02.md i EVIDENCE.md.
 
+Dodana je razvojna poveznica sa stvarnim Labos projektima: uvoz JSON-a,
+izmjena izvora, izvođenje uvezenog sklopa i odvojeni izvoz projekta/rezultata.
+Postupak i ograničenja: [PROJECT-BRIDGE.md](PROJECT-BRIDGE.md). Ova funkcija
+ne mijenja postojeći Arduino CLI format ni glavno sučelje Labosa.
+
 ## Pokretanje
 
 Razvojno računalo:
@@ -121,6 +126,7 @@ npm run prototype:avr:worker
 npm run prototype:avr:package
 npm run prototype:avr:memory
 npm run prototype:avr:browser
+node --import tsx --test prototypes/avr-offline/project-bridge.test.ts
 ```
 
 Node provjere ne zamjenjuju stvarni browser prihvat. Browser provjera

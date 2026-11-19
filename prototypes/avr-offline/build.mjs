@@ -58,9 +58,9 @@ await copyFile(here+'/core-build-manifest.json',output+'/toolchain/core-build-ma
 const shared={bundle:true,platform:'browser',target:'es2022',define:{__APP_BUILD__:'"prototype"',__APP_BASE__:'"./"',__APP_VERSION__:'"0.15.7-prototype.2"'},logLevel:'warning'};
 await build({...shared,entryPoints:[here+'/app.mjs'],format:'esm',outfile:output+'/app.js'});
 await build({...shared,entryPoints:[here+'/worker.ts'],format:'iife',outfile:output+'/worker.js'});
-for(const name of ['index.html','style.css','README.md'])await copyFile(here+'/'+name,output+'/'+name);
+for(const name of ['index.html','style.css','README.md','PROJECT-BRIDGE.md'])await copyFile(here+'/'+name,output+'/'+name);
 await copyFile(here+'/runtime-manifest.json',output+'/toolchain/manifest.json');
-const shell=['index.html','app.js','worker.js','style.css','README.md','toolchain/NOTICE.json'];
+const shell=['index.html','app.js','worker.js','style.css','README.md','PROJECT-BRIDGE.md','toolchain/NOTICE.json'];
 const hash=createHash('sha256');for(const name of shell)hash.update(await readFile(output+'/'+name));
 const cache='labos-avr-prototype-shell-'+hash.digest('hex').slice(0,16);
 await writeFile(output+'/sw.js',`const CACHE=${JSON.stringify(cache)}, FILES=${JSON.stringify(shell)};

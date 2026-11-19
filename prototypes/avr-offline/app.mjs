@@ -1,14 +1,23 @@
 import {installPackage,packageStatus,PACKED_BYTES} from './package.mjs';
 import {validateResult,normalizeInput} from './compiler.mjs';
 import {EXAMPLES} from './examples.mjs';
+import {readProject,projectInput,updateProject,projectBundle,IMPORT_LIMIT} from './project-bridge.ts';
 const $=id=>document.getElementById(id);
 const storageKey='labos-avr-offline-prototype-project-v1';
-let files=structuredClone(EXAMPLES.blink.files), active='main.ino', result=null, simulation=null, worker=null, timer=null, job=0, ready=false;
-try {const saved=JSON.parse(localStorage.getItem(storageKey));if(saved){const input=normalizeInput(saved);files=input.files;$('board').value=input.board;}}catch{}
+let files=structuredClone(EXAMPLES.blink.files), active='main.ino', result=null, simulation=null, worker=null, timer=null, job=0, ready=false, project=null, importTicket=0;
+let restoreError='';
+try {const saved=JSON.parse(localStorage.getItem(storageKey));if(saved){const input=normalizeInput(saved);if(saved.project)project=updateProject(projectInput(saved.project).project,input);files=input.files;$('board').value=input.board;}}catch{restoreError='Spremljeni projekt nije valjan. Izvorni spremljeni zapis nije obrisan; uvezi sigurnosnu kopiju.';}
 const input=()=>({board:$('board').value,files:structuredClone(files)});
-function persist(){try{localStorage.setItem(storageKey,JSON.stringify(input()));}catch{$('status').textContent='Preglednik nije spremio izmjene. Kopiraj kod prije zatvaranja.';}}
-function clearOutput(){simulation=null;$('serial').textContent='Izmijenjeni program još nije pokrenut.';$('led').classList.remove('on');$('transitions').textContent='';$('wave').getContext('2d').clearRect(0,0,800,100);}
-function invalidate(){result=null;clearOutput();$('run').disabled=true;$('diagnostics').textContent='Izvor je promijenjen; potrebno je novo prevođenje.';$('status').textContent='Izmijenjeni program još nije preveden.';if(worker)cancel('Izvor je promijenjen. Posao je prekinut.');persist();}
+function currentProject(){return project?updateProject(project,input()):null;}
+function projectInfo(){
+  $('board').disabled=!!project;$('example').disabled=!!project;
+  $('export-project').disabled=!project;$('export-result').disabled=!project||!result;
+  $('detach-project').disabled=!project;
+  $('project-status').textContent=project?`${project.title} · sklop i ostale datoteke ostaju u projektu. Simulacija koristi uvezeni sklop; graf ispod prikazuje samo D13.`:'Uvezi projekt JSON iz Labosa ili prethodno spremljeni rezultat prototipa. Podržani su Uno/Nano projekti bez dodatnih biblioteka.';
+}
+function persist(){try{if(project)project=currentProject();localStorage.setItem(storageKey,JSON.stringify({...input(),...(project?{project}:{})}));return true;}catch{$('status').textContent='Preglednik nije spremio izmjene. Preuzmi projekt ili kopiraj kod prije zatvaranja.';return false;}}
+function clearOutput(){simulation=null;$('circuit-result').textContent='Sklop još nije pokrenut.';$('serial').textContent='Izmijenjeni program još nije pokrenut.';$('led').classList.remove('on');$('transitions').textContent='';$('wave').getContext('2d').clearRect(0,0,800,100);}
+function invalidate(){importTicket++;result=null;projectInfo();clearOutput();$('run').disabled=true;$('diagnostics').textContent='Izvor je promijenjen; potrebno je novo prevođenje.';$('status').textContent='Izmijenjeni program još nije preveden.';if(worker)cancel('Izvor je promijenjen. Posao je prekinut.');persist();}
 function tabs(){
   $('tabs').replaceChildren();
   for(const name of Object.keys(files)){
@@ -20,16 +29,18 @@ $('code').oninput=()=>{files[active]=$('code').value;invalidate();};
 $('board').onchange=invalidate;
 $('example').onchange=()=>{files=structuredClone(EXAMPLES[$('example').value].files);active='main.ino';invalidate();tabs();};
 function end(){worker?.terminate();worker=null;clearTimeout(timer);$('cancel').disabled=true;$('compile').disabled=!ready;}
-function cancel(message='Posao je prekinut.'){job++;end();result=null;$('run').disabled=true;clearOutput();$('status').textContent=message;}
+function cancel(message='Posao je prekinut.'){importTicket++;job++;end();result=null;projectInfo();$('run').disabled=true;clearOutput();$('status').textContent=message;}
 $('cancel').onclick=()=>cancel();
 async function runJob(type) {
   if(worker)return;
-  const snapshot=input(), id=++job;
-  if(type==='compile'){result=null;clearOutput();$('diagnostics').textContent='Pripremam lokalne datoteke prevoditelja…';}
+  let snapshot,projectSnapshot;
+  try{snapshot=input();projectSnapshot=currentProject();}catch(e){cancel();$('diagnostics').textContent=e.message;return;}
+  const id=++job;
+  if(type==='compile'){result=null;projectInfo();clearOutput();$('diagnostics').textContent='Pripremam lokalne datoteke prevoditelja…';}
   $('compile').disabled=true;$('run').disabled=true;$('cancel').disabled=false;
   $('status').textContent=type==='compile'?'Prevodim u pregledniku…':'Simuliram 1,2 sekunde…';
   worker=new Worker(new URL('worker.js',location.href));
-  const fail=message=>{if(id!==job)return;end();result=null;clearOutput();$('run').disabled=true;$('status').textContent='Program nije pokrenut.';$('diagnostics').textContent=message;};
+  const fail=message=>{if(id!==job)return;end();result=null;projectInfo();clearOutput();$('run').disabled=true;$('status').textContent='Program nije pokrenut.';$('diagnostics').textContent=message;};
   timer=setTimeout(()=>{cancel('Posao je prekinut nakon 60 sekundi.');},60000);
   worker.onerror=e=>fail(e.message || 'Pogreška radnog procesa.');
   worker.onmessage=async({data})=>{
@@ -40,7 +51,7 @@ async function runJob(type) {
       if(data.type==='compiled'){
         await validateResult(input(),data.result);
         if(id!==job)return;
-        result=data.result;end();$('run').disabled=false;
+        result=data.result;end();projectInfo();$('run').disabled=false;
         $('status').textContent='Prevedeno lokalno. Spremno za simulaciju.';
         $('diagnostics').textContent=`Vrijeme: ${result.elapsedMs} ms\nFlash: ${result.flashBytes} B\nStatički SRAM: ${result.staticRamBytes} B\nHEX SHA-256: ${result.hexHash}\n\n${result.diagnostics.join('\n') || 'Bez pogrešaka.'}`;
       }else if(data.type==='simulated'){
@@ -52,13 +63,35 @@ async function runJob(type) {
         $('transitions').textContent=`· ${transitions} promjena u 1,2 s`;$('led').classList.toggle('on',!!samples.at(-1)?.level);
         const ctx=$('wave').getContext('2d');ctx.clearRect(0,0,800,100);ctx.strokeStyle='#08796e';ctx.lineWidth=2;ctx.beginPath();
         samples.forEach((s,i)=>{const x=s.ms/1200*800,y=s.level?20:80;if(i){ctx.lineTo(x,samples[i-1].level?20:80);ctx.lineTo(x,y);}else ctx.moveTo(x,y);});ctx.stroke();
-        $('status').textContent='Simulacija dovršena: izvršen je upravo prevedeni HEX.';
+        $('status').textContent=simulation.faults.length?'Simulacija je prijavila pogrešku.':'Simulacija dovršena: izvršen je upravo prevedeni HEX.';
+        if(project){
+          const frame=simulation.lastFrame;
+          $('circuit-result').textContent=[...Object.entries(frame?.leds??{}).map(([id,led])=>`${id}: ${led.currentMa.toFixed(2)} mA`),...(frame?.diagnostics??[]).map(d=>d.message),...simulation.faults.map(e=>e.message)].join('\n')||'Uvezeni sklop izvršen je bez prijavljenih poruka.';
+        }
       }
     }catch(e){fail(e.message);}
   };
-  worker.postMessage({type,input:snapshot,result});
+  worker.postMessage({type,input:snapshot,result,...(projectSnapshot?{project:projectSnapshot}:{})});
 }
 $('compile').onclick=()=>runJob('compile');$('run').onclick=()=>runJob('simulate');
+$('import-project').onclick=()=>$('project-file').click();
+$('project-file').onchange=async()=>{
+  const file=$('project-file').files[0];$('project-file').value='';if(!file)return;
+  const ticket=++importTicket;
+  try{
+    if(file.size>IMPORT_LIMIT)throw Error('Projekt JSON prelazi 2 MiB.');
+    const loaded=await readProject(await file.text());
+    if(ticket!==importTicket)throw Error('Program je izmijenjen tijekom uvoza. Ponovi uvoz ako želiš zamijeniti trenutni program.');
+    cancel();project=loaded.project;files=loaded.input.files;$('board').value=loaded.input.board;active='main.ino';result=loaded.result;
+    tabs();projectInfo();const saved=persist();$('run').disabled=!result;
+    if(saved)$('status').textContent=result?'Projekt i rezultat provjereni su. Pokretanje je ručno.':'Projekt je uvezen. Prevedi ga offline.';
+    $('diagnostics').textContent=result?'Uvezen je provjeren rezultat prototipa.':'Projekt još nije preveden ovim prototipom.';
+  }catch(e){$('project-status').textContent=e.message;}
+};
+function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+$('export-project').onclick=()=>{try{download('labos-projekt.json',currentProject());}catch(e){$('project-status').textContent=e.message;}};
+$('export-result').onclick=async()=>{try{const p=currentProject(),r=result,bundle=await projectBundle(p,r);if(result!==r)throw Error('Program je izmijenjen. Ponovno prevedi prije izvoza.');download('labos-offline-prototip.json',bundle);}catch(e){$('project-status').textContent=e.message;}};
+$('detach-project').onclick=()=>{cancel();project=null;projectInfo();persist();$('status').textContent='Uređuješ izdvojenu kopiju izvora. Izvorna uvezena datoteka ostala je nepromijenjena.';};
 async function storageInfo(){try{const s=await navigator.storage.estimate();$('storage-info').textContent=`Zauzeto na ovoj adresi: ${(s.usage/1048576).toFixed(1)} MiB · kvota: ${(s.quota/1048576).toFixed(1)} MiB. Paket se čuva komprimiran.`;}catch{$('storage-info').textContent='Paket se čuva komprimiran.';}}
 $('prepare').onclick=async()=>{
   $('prepare').disabled=true;$('compile').disabled=true;
@@ -70,14 +103,14 @@ $('prepare').onclick=async()=>{
   finally{$('prepare').disabled=false;$('compile').disabled=!ready||!!worker;await storageInfo();}
 };
 const network=()=>{$('network').textContent=navigator.onLine?'Mreža je uključena':'Mreža je isključena';};
-window.addEventListener('online',network);window.addEventListener('offline',network);network();tabs();
+window.addEventListener('online',network);window.addEventListener('offline',network);network();tabs();projectInfo();if(restoreError)$('project-status').textContent=restoreError;
 const shellReady=(async()=>{
   if(!('serviceWorker' in navigator))throw Error('Ovaj preglednik ne podržava offline aplikaciju.');
   await navigator.serviceWorker.register('./sw.js',{scope:'./'});
   await navigator.serviceWorker.ready;
 })();
 // Read-only evidence hook for repeatable prototype verification, never an execution shortcut.
-window.labosPrototype={getState:()=>structuredClone({input:input(),result,simulation,ready,busy:!!worker})};
+window.labosPrototype={getState:()=>structuredClone({input:input(),project:currentProject(),result,simulation,ready,busy:!!worker})};
 try{await shellReady;await packageStatus();ready=true;$('progress').value=1;$('package-status').textContent='Aplikacija i prevoditelj dostupni su iz spremljenog paketa.';}
 catch(e){$('package-status').textContent=`Za prvi offline rad pripremi paket (${(PACKED_BYTES/1048576).toFixed(1)} MiB).`;}
 $('compile').disabled=!ready;
