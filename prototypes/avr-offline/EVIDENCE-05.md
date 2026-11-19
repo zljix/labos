@@ -20,18 +20,51 @@ Razvojna grana: `prototype/arduino-offline-avr` u `zljix/labos`.
 - Paket se nadograđuje bez brisanja starih SDK-ova i drugih spremišta;
   test prekinute nadogradnje i ponovnog korištenja postojećih alata prolazi.
 
-Node matrica izričito zabranjuje `fetch`, ali sama nije dokaz browser
-offline rada. Zasebna CI provjera za ovu etapu još treba biti potvrđena.
+Node matrica izričito zabranjuje `fetch`. Zasebna CI provjera u stvarnom
+Chromiumu također je uspješno dovršena, kako je opisano ispod.
 
-Implementacija je spremljena u lokalni commit
-`f9ac93f5bd5a5065d3fb0cd9d703685a636d9be1`. Automatska provjera odobrenja
-blokirala je `git push` jer nije potvrđeno izričito odobrenje slanja
-izvornog koda na GitHub. Slanje nije ponovljeno drugim putem. Udaljena grana
-i dalje je na `d05b8a27a4601a25d9ddc2aadde0b229125db690`.
-Za dovršetak ostaje odobrenje slanja na postojeću razvojnu granu
-`zljix/labos:prototype/arduino-offline-avr`, nakon čega workflow provjerava
-ponovljivost SDK-a, sve testove i novi izvor s bibliotekama u potpuno
-mrežno izoliranom Chromiumu. Uspjeh te provjere trenutačno se ne tvrdi.
+Nakon korisnikova odobrenja razvojna verzija spremljena je u
+`10724688b69cb109fb9406e2e70d41cf428b92b7`. Stablo datoteka identično je
+lokalno provjerenoj verziji (`8f08a5bc575a173e726d87d3ac0474386401aa59`).
+Provjera: [GitHub Actions 44639936114](https://github.com/zljix/labos/actions/runs/44639936114).
+**Rezultat: success**, posao `135968088697`, završeno 20. studenoga 2026.
+u 00:52 (Europe/Zagreb). Dokumentacijski commit koji sprema ovaj izvještaj
+nije zasebno testirani izvršni kod.
+
+## Potpuna mrežna izolacija — potvrđeno
+
+- Ponovna izgradnja SDK-a, jezgri i svih biblioteka dala je iste manifeste
+  i SHA-256 kao lokalna izgradnja; CI provjera razlika prošla je.
+- Svih 47 testova prototipa prošlo je i na CI hostu, bez preskakanja.
+- Chromium 151.0.7922.34 otvoren je u zasebnom Linux mrežnom prostoru,
+  sa samo isključenim sučeljem `lo`, bez HTTP poslužitelja.
+- Zabilježeno je 13 uspješnih prevođenja tijekom izolirane faze, uključujući
+  nove Uno/Nano izvore, zasebne C/C++ datoteke i uvezene projekte.
+- AHT10 + U8g2 OLED + Servo projekt preveden je s novom porukom nastalom
+  nakon prekida mreže. Simulator je prikazao T=24,00 °C, RH=50,00 %, kut 0°
+  i 287 popunjenih bajtova slike OLED-a.
+- Promjena izbora biblioteke odbacila je stari rezultat. Pravila ovisnosti
+  DallasTemperature/OneWire i isključivosti U8g2 paketa prošla su kroz sučelje.
+- Standardni JSON izvoz očuvao je odabir biblioteka. Puni restart preglednika
+  očuvao je projekt i odabir; dodatno izmijenjen izvor ponovno je preveden i
+  izvršen bez mreže. Nije bilo pogrešaka stranice.
+- Predmemorija i profil nisu brisani između faza i restarta. Nepovezana
+  spremišta ostala su očuvana.
+- Snimke desktop prikaza i širine 390 px pregledane su; nema vodoravnog
+  prelijevanja. To nije test fizičkog mobitela.
+
+Dokazi: [prepare.json](evidence-05/prepare.json),
+[isolated.json](evidence-05/isolated.json) i
+[libraries-ci.json](evidence-05/libraries-ci.json).
+[CI artefakt sa snimkama](https://github.com/zljix/labos/actions/runs/44639936114/artifacts/14586720949)
+ima 481047 B i rok čuvanja do 19. prosinca 2026. Preuzet je i potvrđen SHA-256:
+`e7c84dc25c9222e0be18fabe3f2f9e7ed1e417ab50e03754b5ebb0371a995525`.
+
+Najveći uzorkovani zbroj RSS-a potomaka bio je 1366916 KiB (oko 1,30 GiB),
+266 uzoraka svakih 200 ms. Uključuje višestruko brojanje dijeljenih stranica,
+ne uključuje Node host i nije stroga gornja granica ni potrošnja samo Workera.
+CI Chromium koristi `--no-sandbox`; potvrđena je zasebna OS mrežna izolacija,
+ne Chromiumov vlastiti sandbox.
 
 ## Paket
 

@@ -4,13 +4,12 @@ Osnova: `zljix/labos`, 0.15.7-beta.1, commit `b5bc958`.
 Korisnik je odredio `labosv2` kao odredište buduće objave nadograđenog Labosa.
 Ovaj prototip je zaseban eksperiment na razvojnoj grani: ne mijenja glavnu
 aplikaciju, njezin service worker, postojeći ugovor rezultata ni glavne grane.
-**Status:** prevođenje i simulacija potvrđeni su u Node testovima i stvarnom
-Chromiumu. Prototip 02 prošao je i potpunu mrežnu izolaciju na zasebnom Linux
-CI hostu: novi Uno/Nano C/C++ izvori, dva puna pokretanja preglednika bez
-mreže, odbacivanje starog rezultata nakon pogreške, prekid i očuvanje podataka.
-Dokaz i preostale granice prihvata: [EVIDENCE-03.md](EVIDENCE-03.md).
-Prototip 02 dodaje zasebnu izgradnju jezgri, manji SDK i identitet paketa.
-Ranije provjere sačuvane su u EVIDENCE-02.md i EVIDENCE.md.
+**Status:** prototip 03 prošao je ponovljivu izgradnju, 47 automatskih
+provjera i stvarni Chromium u potpunoj mrežnoj izolaciji. Potvrđen je novi
+izvor s AHT10/OLED/Servo bibliotekama, očuvanje projekta i ponovno prevođenje
+nakon potpunog restarta bez mreže. Aktualni dokazi i preostale granice:
+[EVIDENCE-05.md](EVIDENCE-05.md). Ranije etape sačuvane su u EVIDENCE-02.md,
+EVIDENCE-03.md, EVIDENCE-04.md i EVIDENCE.md.
 
 Dodana je razvojna poveznica sa stvarnim Labos projektima: uvoz JSON-a,
 izmjena izvora, izvođenje uvezenog sklopa i odvojeni izvoz projekta/rezultata.
