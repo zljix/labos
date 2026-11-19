@@ -45,3 +45,9 @@ Provjereni izvor i izgrađeni paket pohranjeni su u GitHub commitu `2929513df24f
 Automatska provjera odobrenja odbila je ažuriranje zadane grane `main`: smatra da zahtjev za objavu nije dovoljno izričito odobrenje promjene zadane grane koja pokreće javnu objavu. Odbijanje nije zaobiđeno. Novo izdanje nije objavljeno.
 
 Nakon izričitog odobrenja ažuriranja `zljix/labos:main`: provjeriti trenutačne vrhove grana, objaviti pripremljeno izdanje, pratiti Pages postupak i provjeriti javni manifest te SHA-256 glavnih resursa. Ne ponavljati uspješne lokalne provjere bez promjene izvora ili novog nalaza. Browser prihvat i pilot ostaju zasebno otvoreni.
+
+## Potvrđena javna objava
+
+Nakon izričitog korisnikova odobrenja PR #2 spojen je u main commitom `89a569c0694290948e9445dca7cfcf8e8718a65c`. [Pages postupak](https://github.com/zljix/labos/actions/runs/44591878491) uspješno je dovršio provjere, izgradnju i objavu.
+
+Javni manifest potvrđuje `0.15.7-beta.1`, paket `9fededc02f940879` i putanju `/labos/`. HTTP dohvat bez predmemorije potvrdio je duljinu i SHA-256 glavnog HTML-a, JavaScripta i CSS-a prema manifestu. To nije preglednički offline test; ranije navedena ograničenja ostaju otvorena. Opsežna školska regresija pokrenuta je zasebno i njezin završetak ovdje nije potvrđen. Repozitorij labosv2 nije mijenjan.
