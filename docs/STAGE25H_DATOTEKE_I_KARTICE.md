@@ -37,3 +37,11 @@ Preglednik je odbio pristup čišćenju predmemorije zbog sigurnosnog pravila ko
 Prethodna opsežna [školska regresija izdanja 25G](https://github.com/zljix/labos/actions/runs/44410804800) sada je potvrđena kao uspješna. To ne predstavlja prihvat školskog paketa 25H.
 
 Rezultat javne objave i provjera posluženih datoteka bit će dopunjeni nakon završetka Pages postupka.
+
+## Pripremljeno izdanje i blokada objave
+
+Provjereni izvor i izgrađeni paket pohranjeni su u GitHub commitu `2929513df24fa85e75d346e949858e40d0e48c29`, stablu `155101afd0ac4ca6d2ecfc45e26c4a7b7d60b489`. Stablo je jednako lokalno provjerenom izdanju. Rad se čuva na grani `codex/25h-project-files`.
+
+Automatska provjera odobrenja odbila je ažuriranje zadane grane `main`: smatra da zahtjev za objavu nije dovoljno izričito odobrenje promjene zadane grane koja pokreće javnu objavu. Odbijanje nije zaobiđeno. Novo izdanje nije objavljeno.
+
+Nakon izričitog odobrenja ažuriranja `zljix/labos:main`: provjeriti trenutačne vrhove grana, objaviti pripremljeno izdanje, pratiti Pages postupak i provjeriti javni manifest te SHA-256 glavnih resursa. Ne ponavljati uspješne lokalne provjere bez promjene izvora ili novog nalaza. Browser prihvat i pilot ostaju zasebno otvoreni.
