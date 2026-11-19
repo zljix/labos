@@ -1,5 +1,8 @@
 # Uvoz Labos projekta u offline prototip
 
+Status: implementirano i provjereno u mrežno izoliranom Chromiumu.
+Točan commit, rezultati i ograničenja: [EVIDENCE-04.md](EVIDENCE-04.md).
+
 Ova razvojna etapa povezuje prototip s postojećim formatom projekta i
 stvarnim sklopom. Glavna aplikacija, Arduino CLI ugovor i `labosv2` ostaju
 nepromijenjeni. Ovo nije dovršena integracija u glavno sučelje Labosa.

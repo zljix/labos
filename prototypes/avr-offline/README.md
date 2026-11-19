@@ -16,6 +16,8 @@ Dodana je razvojna poveznica sa stvarnim Labos projektima: uvoz JSON-a,
 izmjena izvora, izvođenje uvezenog sklopa i odvojeni izvoz projekta/rezultata.
 Postupak i ograničenja: [PROJECT-BRIDGE.md](PROJECT-BRIDGE.md). Ova funkcija
 ne mijenja postojeći Arduino CLI format ni glavno sučelje Labosa.
+Prošla je i proširena provjera projekta u mrežnoj izolaciji; dokazi i
+trenutačno stanje nastavka: [EVIDENCE-04.md](EVIDENCE-04.md).
 
 ## Pokretanje
 
