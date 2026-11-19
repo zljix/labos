@@ -1,5 +1,6 @@
 import {investigationProject} from '../lessons/workflow';
 import ActionGroup from './ActionGroup';
+import {ProjectFiles, FileTabs, fileTabId} from './ProjectFiles';
 import {tabKeys} from '../platform/tabs';
 import RadioPanel from '../radio/RadioPanel';
 import {opticalExamples,opticalCircuit,type OpticalExample} from '../circuit/max30102Examples';
@@ -330,9 +331,7 @@ export default function App() {
   const [outputOpen,setOutputOpen]=useState(false),[outputHeight,setOutputHeight]=useState(180),[split,setSplit]=useState(50);
   const workspaceRef=useRef<HTMLElement>(null);
   const [wrapLines,setWrapLines]=useState(false);
-  const [openedFiles,setOpenedFiles]=useState<string[]>([]);
-  useEffect(()=>{setOpenedFiles(p?[p.settings.activeFile]:[]);setOutputOpen(false);setCodeExpanded(false);},[p?.id]);
-  useEffect(()=>{if(p)setOpenedFiles(paths=>paths.includes(p.settings.activeFile)?paths:[...paths,p.settings.activeFile]);},[p?.settings.activeFile]);
+  useEffect(()=>{setOutputOpen(false);setCodeExpanded(false);},[p?.id]);
   useEffect(()=>{if(runtime.state==='error'){setOutputOpen(true);setTab('console');}},[runtime.state]);
   useEffect(()=>{if(labTab==='lesson'){setFilesOpen(false);setExpandedCircuit(false);setCodeExpanded(false);}},[labTab]);
   const showInstructions=()=>{setLabTab('lesson');setFilesOpen(false);setMobileTab('lesson');setExpandedCircuit(false);setCodeExpanded(false);};
@@ -865,32 +864,10 @@ export default function App() {
             <strong title={p.title}>{p.title}</strong>
             <span>{Object.keys(p.files).length}</span>
           </div>
-          <div className="file-list">
-            {[false,true].map(advanced=><details key={String(advanced)} open={!advanced} className="file-group"><summary>{advanced?'Pomoćne datoteke':'Program i upute'}</summary>{Object.keys(p.files).filter(path=>!(/\.(py|ino|cpp|c|h|hpp|md|txt)$/.test(path))===advanced)
-              .sort((a, b) =>
-                a === p.entryFile ? -1 : b === p.entryFile ? 1 : a.localeCompare(b),
-              )
-              .map((path) => (
-                <button
-                  key={path}
-                  className={`file-row ${path === active ? "selected" : ""}`}
-                  onClick={() => {
-                    ws.change("Odabrana datoteka", (n) => {
-                      n.settings.activeFile = path;
-                    });
-                    setMobileTab("code");
-                  }}
-                >
-                  <span
-                    className={`file-type ${path.endsWith(".py") ? "python" : ""}`}
-                  >
-                    {path.endsWith(".py") ? "py" : "{ }"}
-                  </span>
-                  <span title={path}>{path}</span>
-                  {path === p.entryFile && <small>ULAZ</small>}
-                </button>
-              ))}</details>)}
-          </div>
+          <ProjectFiles key={p.id} files={p.files} active={active} entryFile={p.entryFile} onSelect={path => {
+            ws.change('Odabrana datoteka', n => {n.settings.activeFile = path;});
+            setMobileTab('code');
+          }}/>
           <button
             className="add-file"
             onClick={() => openDialog("files", p.language==="micropython"?"pomoc.py":"pomoc.h")}
@@ -1157,35 +1134,10 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div className="file-tabs" role="tablist" aria-label="Datoteke" onKeyDown={tabKeys}>
-            {[...new Set([...openedFiles,active])].filter(path=>Object.hasOwn(p.files,path)).map((path) => (
-              <button
-                key={path}
-                role="tab"
-                id={`file-tab-${encodeURIComponent(path)}`} aria-controls="file-content" tabIndex={path===active?0:-1}
-                aria-selected={path === active}
-                className={path === active ? "active" : ""}
-                onClick={() =>
-                  ws.change("Odabrana datoteka", (n) => {
-                    n.settings.activeFile = path;
-                  })
-                }
-              >
-                <span className="file-type python">
-                  {path.endsWith(".py") ? "py" : "{ }"}
-                </span>
-                {path}
-              </button>
-            ))}
-            <button
-              className="new-tab"
-              onClick={() => openDialog("files", p.language==="micropython"?"pomoc.py":"pomoc.h")}
-              aria-label="Dodaj datoteku"
-            >
-              <Icon name="plus" size={14} />
-            </button>
-          </div>
-          <div id="file-content" role="tabpanel" aria-labelledby={`file-tab-${encodeURIComponent(active)}`} className="file-tab-content">
+          <FileTabs key={p.id} files={p.files} active={active}
+            onSelect={path => ws.change('Odabrana datoteka', n => {n.settings.activeFile = path;})}
+            onCreate={() => openDialog('files', p.language === 'micropython' ? 'pomoc.py' : 'pomoc.h')}/>
+          <div id="file-content" role="tabpanel" aria-labelledby={fileTabId(active)} className="file-tab-content">
           <div className="editor-file-info">
             <span>{active}</span>
             <div>

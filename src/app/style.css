@@ -955,29 +955,6 @@ p {
   background: var(--raised);
   border-bottom: 1px solid var(--line);
 }
-.file-tabs > button {
-  border: 0;
-  border-radius: 0;
-  border-right: 1px solid var(--line);
-  white-space: nowrap;
-  min-height: 39px;
-  background: none;
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 400;
-  border-bottom: 2px solid transparent;
-  gap: 9px;
-  color: var(--muted);
-}
-.file-tabs > button.active {
-  border-bottom-color: #1b9e88;
-  color: var(--text);
-  background: var(--surface);
-}
-.file-tabs .new-tab {
-  padding: 8px 10px;
-  border-right: 0;
-}
 .editor-file-info {
   display: flex;
   justify-content: space-between;

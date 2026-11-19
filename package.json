@@ -1,6 +1,6 @@
 {
   "name": "esp32-micropython-lab",
-  "version": "0.15.6-beta.1",
+  "version": "0.15.7-beta.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -145,8 +145,8 @@
     "vite": "8.3.8"
   },
   "labosRelease": {
-    "stage": "25G",
-    "title": "Preglednija svojstva komponenti",
+    "stage": "25H",
+    "title": "Preglednije datoteke i kartice",
     "acceptance": "technical-preview"
   }
 }

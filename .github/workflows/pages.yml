@@ -25,6 +25,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Provjeri datoteke, kartice i radni prostor
+        run: npm run test:workspace
       - run: npm run test:school-pilot
       - run: npm run test:offline-ui
       - run: node --test verification/offline-storage.test.mjs
