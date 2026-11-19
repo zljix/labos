@@ -1,8 +1,11 @@
-# Prototip 01 — rezultati i točka nastavka
+# Prototip 01 — arhivirani rezultati
+
+Aktualno stanje: [prototip 02](EVIDENCE-02.md). Ovaj dokument čuva
+ranije provedene provjere i tadašnja otvorena pitanja.
 
 Status: prevođenje i simulacija potvrđeni u testnom runtimeu i stvarnom
-pregledniku uz ugašen poslužitelj. Potpuno isključena mreža i restart cijelog
-browsera ostaju otvoreni. Ovo još nije beta za učenike.
+pregledniku uz ugašen poslužitelj, uključujući ponovno pokretanje browsera.
+Potpuno isključena mreža ostaje otvorena. Ovo još nije beta za učenike.
 Polazište: Labos 0.15.7-beta.1 (`b5bc95895b4d725dc2a6717ea1f33a3c7144f1b1`).
 Buduće odredište objave nadograđenog Labosa je **labosv2**.
 
@@ -29,6 +32,7 @@ Buduće odredište objave nadograđenog Labosa je **labosv2**.
 | Browser pogreška i ručni prekid | Nema pokretanja prethodnog programa |
 | Promjena tijekom browser prevođenja | Posao prekinut, pokretanje onemogućeno |
 | Zatvorena pa otvorena nova kartica | Izmijenjeni izvor i komprimirani paket očuvani; novo prevođenje uspijeva |
+| Izlazak iz Chromiuma i ponovno pokretanje | Izvor, Nano odabir i paket očuvani; novi program 61 ms preveden i izvršen uz ugašen poslužitelj |
 | Oporavak nakon stvarnog `Quota exceeded` | Nastavak komprimiranjem bez brisanja predmemorije |
 
 Prvi pokušaj postojećeg AVR testa produkcijskog paketa koristio je preuzeti
@@ -66,7 +70,7 @@ Worker procesa **nisu izmjerene**. Nema tvrdnje o i5-6600, iPhoneu ili Androidu.
 
 ## Nije još potvrđeno
 
-- Isključena mreža uz promjenu izvora i ponovno pokretanje cijelog preglednika.
+- Potpuno isključena mreža uz promjenu izvora i ponovno pokretanje preglednika.
 - Prekinuto ažuriranje između različitih verzija alata, fizički mobiteli i školsko računalo.
 - Očuvanje zasebnih postojećih učeničkih projekata tijekom buduće integracije
   u glavnu aplikaciju; ovaj prototip koristi vlastito spremište.
@@ -82,9 +86,23 @@ zaustavljen je naredbom `sites-preview stop`, a pripremljena aplikacija,
 novi izvori i ponovno otvaranje kartice radili su iz pohranjenih podataka.
 Mrežni status browsera ostao je uključen; drugi mrežni resursi nisu blokirani.
 
+Dodatna provjera 19. 11. 2026.: iz Chromiumova izbornika odabran je **Exit**;
+popis prozora zatim je bio prazan. Pokretanje kroz desktop aplikaciju otvorilo
+je preglednik bez dostupne spremljene aplikacije; taj pokušaj nije dokaz gubitka
+predmemorije izvornog testnog profila. Ponovno otvaranje kroz podržani upravljani
+preglednik vratilo je spremljeni Nano izvor `NANO_PONOVNO_7391`, odabir pločice
+i provjeren paket. Poslužitelj je cijelo vrijeme bio zaustavljen.
+Tek nakon ponovnog pokretanja izvor je promijenjen u `NAKON_RESTARTA_6193`
+s intervalom 61 ms. Novo prevođenje trajalo je 1072 ms: Flash 2742 B,
+statički SRAM 216 B; simulacija je prikazala novu poruku i 19 promjena D13
+u 1,2 s. Detalji i HEX hash su u polju `restart` datoteke
+`browser-evidence.json`. Predmemorija nije brisana. To potvrđuje ponovno
+pokretanje uz nedostupan poslužitelj, ali ne i punu mrežnu izolaciju.
+
 ## Sljedeći korak
 
-1. Dovršiti punu mrežnu izolaciju i restart browsera u dopuštenom testnom okruženju.
+1. Dovršiti punu mrežnu izolaciju, uključujući restart browsera bez mreže,
+   u dopuštenom testnom okruženju.
 2. Izgraditi i zaključati zasebne Uno i Nano jezgre: kandidat sada ima zajedničku
    Nano jezgru, dok se skice prevode zasebnim makroima i pin-varijantama.
 3. Provjeriti podrijetlo/reprodukciju i izvore za vlastiti distributivni paket.

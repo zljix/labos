@@ -1,11 +1,13 @@
+import runtime from './runtime-manifest.json' with {type:'json'};
 import {parseHex, sha256} from '../../public/avr-contract.mjs';
 
-export const PROFILE = 'labos-avr-offline-prototype-1';
+export const PACKAGE_HASH=runtime.packageHash;
+export const PROFILE = 'labos-avr-offline-prototype-2';
 export const UPSTREAM = 'avr-gcc-15.2.0-pcbkit-4';
 export const TARGETS = {uno: {variant:'standard', macro:'UNO', flash:32256}, nano: {variant:'eightanaloginputs', macro:'NANO', flash:30720}};
 const encoder = new TextEncoder();
 export function normalizeInput(input) {
-  if (!TARGETS[input?.board]) throw Error('Prototip podržava samo Uno i klasični Nano.');
+  if (!Object.hasOwn(TARGETS,input?.board)) throw Error('Prototip podržava samo Uno i klasični Nano.');
   const files = {}; let bytes = 0;
   const paths = Object.keys(input.files ?? {}).sort();
   if (!paths.length || paths.length > 32) throw Error('Dopuštene su 1–32 izvorne datoteke.');
@@ -18,7 +20,7 @@ export function normalizeInput(input) {
   }
   if (!Object.hasOwn(files, 'main.ino')) throw Error('Nedostaje main.ino.');
   if (new Set(paths.map(p=>p.toLowerCase())).size !== paths.length) throw Error('Dvostruka putanja.');
-  return {profile:PROFILE, upstream:UPSTREAM, board:input.board, files};
+  return {profile:PROFILE, upstream:UPSTREAM, packageHash:PACKAGE_HASH, board:input.board, files};
 }
 export const fingerprint = input => sha256(JSON.stringify(normalizeInput(input)));
 
@@ -43,20 +45,11 @@ function writeFiles(FS, files) {
   }
 }
 
-// Each invocation gets a fresh Emscripten instance and virtual filesystem.
-// There is no server compiler and no precompiled sketch lookup.
-export async function compile(input, {sdk, factory, progress=()=>{}}) {
-  input = normalizeInput(input);
-  const started = performance.now(), target = TARGETS[input.board];
-  const inputHash = await fingerprint(input), diagnostics = [], timings = [];
-  const files = new Map(sdk);
-  for (const [path,content] of Object.entries(input.files)) files.set('/project/'+path,encoder.encode(content));
-  files.set('/project/sketch.cpp',encoder.encode('#include <Arduino.h>\n#line 1 "main.ino"\n'+input.files['main.ino']));
-  async function tool(name,args,output) {
+export async function runTool(name,args,output,{files,factory,progress=()=>{},diagnostics=[],timings=[]}) {
     progress(name); const t = performance.now(); const messages=[];
     const create = await factory(name);
     const options = {arguments:args.slice(), print:x=>messages.push(String(x)), printErr:x=>messages.push(String(x)),
-      preRun:[m=>writeFiles(m.FS,files)], noInitialRun:name==='cc1'||name==='cc1plus'};
+      preRun:[m=>{writeFiles(m.FS,files);m.FS.mkdirTree(output.slice(0,output.lastIndexOf("/")));}], noInitialRun:name==='cc1'||name==='cc1plus'};
     const module = await create(options);
     const status = options.noInitialRun ? module.callMain(args.slice()) : undefined;
     diagnostics.push(...messages);
@@ -68,21 +61,37 @@ export async function compile(input, {sdk, factory, progress=()=>{}}) {
     files.set(output,result); timings.push({tool:name,ms:Math.round(performance.now()-t)});
     return result;
   }
+
+export function compilerFlags(board) {
+  const target=TARGETS[board];
   const includes=['-I/project','-I/sysroot/arduino/cores/arduino','-I/sysroot/arduino/variants/'+target.variant,'-isystem','/sysroot/gcc-include','-isystem','/sysroot/avr/include'];
-  const common=['-quiet','-Os','-mmcu=avr5','-mn-flash=1','-mno-skip-bug','-D__AVR_ATmega328P__','-D__AVR_DEVICE_NAME__=atmega328p','-DF_CPU=16000000L','-DARDUINO=10819','-DARDUINO_AVR_'+target.macro,'-DARDUINO_ARCH_AVR','-ffunction-sections','-fdata-sections',...includes];
+  return ['-quiet','-Os','-mmcu=avr5','-mn-flash=1','-mno-skip-bug','-D__AVR_ATmega328P__','-D__AVR_DEVICE_NAME__=atmega328p','-DF_CPU=16000000L','-DARDUINO=10819','-DARDUINO_AVR_'+target.macro,'-DARDUINO_ARCH_AVR','-ffunction-sections','-fdata-sections',...includes];
+}
+
+// Each invocation gets a fresh Emscripten instance and virtual filesystem.
+// There is no server compiler and no precompiled sketch lookup.
+export async function compile(input, {sdk, factory, progress=()=>{}}) {
+  input = normalizeInput(input);
+  const started = performance.now(), target = TARGETS[input.board];
+  const inputHash = await fingerprint(input), diagnostics = [], timings = [];
+  const files = new Map(sdk);
+  for (const [path,content] of Object.entries(input.files)) files.set('/project/'+path,encoder.encode(content));
+  files.set('/project/sketch.cpp',encoder.encode('#include <Arduino.h>\n#line 1 "main.ino"\n'+input.files['main.ino']));
+  const tool=(name,args,output)=>runTool(name,args,output,{files,factory,progress,diagnostics,timings});
+  const common=compilerFlags(input.board);
   const sources=['sketch.cpp',...Object.keys(input.files).filter(p=>/\.(cpp|c)$/.test(p))], objects=[];
   for (let i=0;i<sources.length;i++) {
     const source=sources[i], cpp=source.endsWith('.cpp'), asm='/project/unit'+i+'.s', obj='/project/unit'+i+'.o';
-    await tool(cpp?'cc1plus':'cc1',[...common,...(cpp?['-std=gnu++11','-fno-exceptions','-fno-threadsafe-statics']:['-std=gnu11']),'/project/'+source,'-o',asm],asm);
-    await tool('avr-as',['-mmcu=atmega328p','-o',obj,asm],obj); objects.push(obj);
+    await tool(cpp?'cc1plus':'cc1',[...common,...(cpp?['-std=gnu++11','-fno-exceptions','-fno-rtti','-fno-threadsafe-statics']:['-std=gnu11']),'/project/'+source,'-o',asm],asm);
+    await tool('avr-as',['-mmcu=atmega328p','-mgcc-isr','-o',obj,asm],obj); objects.push(obj);
   }
-  const avr='/sysroot/avr/lib/avr5', core='/sysroot/arduino/lib/atmega328p';
+  const avr='/sysroot/avr/lib/avr5', core='/sysroot/arduino/boards/'+input.board;
   const elf=await tool('avr-ld',['-m','avr5','-T','/sysroot/avr/lib/ldscripts/avr5.x','--gc-sections','-o','/project/result.elf',avr+'/crtatmega328p.o',...objects,'-L'+avr,'-L/sysroot/libgcc/avr5','-L'+core,'--start-group','-lcore','-lgcc','-lm','-lc','-latmega328p','--end-group'],'/project/result.elf');
   const staticRamBytes=elfStaticRAM(elf);
   if (staticRamBytes>2048) throw Error('Program prelazi 2048 B statičkog SRAM-a.');
   const hex=new TextDecoder().decode(await tool('objcopy',['-O','ihex','-R','.eeprom','/project/result.elf','/project/result.hex'],'/project/result.hex'));
   const loaded=parseHex(hex,target.flash);
-  return {format:'labos-avr-prototype-build',version:1,profile:PROFILE,upstream:UPSTREAM,board:input.board,inputHash,hex,hexHash:await sha256(hex),flashBytes:loaded.extent,staticRamBytes,diagnostics,timings,elapsedMs:Math.round(performance.now()-started)};
+  return {format:'labos-avr-prototype-build',version:2,profile:PROFILE,upstream:UPSTREAM,packageHash:PACKAGE_HASH,board:input.board,inputHash,hex,hexHash:await sha256(hex),flashBytes:loaded.extent,staticRamBytes,diagnostics,timings,elapsedMs:Math.round(performance.now()-started)};
 }
 function elfStaticRAM(bytes) {
   const v=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
@@ -94,7 +103,7 @@ function elfStaticRAM(bytes) {
 }
 export async function validateResult(input,result) {
   const normalized=normalizeInput(input);
-  if(result?.format!=='labos-avr-prototype-build'||result.version!==1||result.profile!==PROFILE||result.upstream!==UPSTREAM||result.board!==normalized.board||result.inputHash!==await fingerprint(input)) throw Error('Izvor ili pločica promijenjeni su. Ponovno prevedi program.');
+  if(result?.format!=='labos-avr-prototype-build'||result.version!==2||result.profile!==PROFILE||result.upstream!==UPSTREAM||result.packageHash!==PACKAGE_HASH||result.board!==normalized.board||result.inputHash!==await fingerprint(input)) throw Error('Izvor ili pločica promijenjeni su. Ponovno prevedi program.');
   if(result.hexHash!==await sha256(result.hex)) throw Error('Oštećen HEX.');
   const loaded=parseHex(result.hex,TARGETS[result.board].flash);
   if(result.flashBytes!==loaded.extent||!Number.isSafeInteger(result.staticRamBytes)||result.staticRamBytes<0||result.staticRamBytes>2048)throw Error('Neispravna memorija rezultata.');

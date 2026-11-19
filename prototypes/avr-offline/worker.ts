@@ -1,5 +1,5 @@
 import {compile, unpackSDK} from './compiler.mjs';
-import {readPackage} from './package.mjs';
+import {readPackage,SDK_FILE} from './package.mjs';
 import {simulate} from './simulation';
 
 async function compileLocal(input:any) {
@@ -18,7 +18,7 @@ async function compileLocal(input:any) {
     }
     return factories.get(name);
   };
-  return compile(input,{sdk:unpackSDK(bytes.get('sdk.bin')),factory,progress:(tool:string)=>postMessage({type:'progress',tool})});
+  return compile(input,{sdk:unpackSDK(bytes.get(SDK_FILE)),factory,progress:(tool:string)=>postMessage({type:'progress',tool})});
 }
 let busy=false;
 self.onmessage=async({data})=>{

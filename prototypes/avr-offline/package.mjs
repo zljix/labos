@@ -1,8 +1,10 @@
 import upstream from './upstream-manifest.json' with {type:'json'};
+import runtime from './runtime-manifest.json' with {type:'json'};
 import packed from './packed-manifest.json' with {type:'json'};
 import {sha256} from '../../public/avr-contract.mjs';
-export const FILES = Object.fromEntries(Object.entries(upstream.files).filter(([name])=>name!=='ctags.js'));
-export const CACHE = 'labos-avr-prototype-1-'+FILES['sdk.bin'].sha256.slice(0,12);
+export const FILES=runtime.files;
+export const SDK_FILE=runtime.sdkFile;
+export const CACHE = 'labos-avr-prototype-1-'+upstream.files['sdk.bin'].sha256.slice(0,12);
 export const assetURL = name => new URL('toolchain/'+name, self.location.href).href;
 export const PACKED_BYTES=Object.values(packed).reduce((n,f)=>n+f.bytes,0);
 const CODEC='X-Labos-Compression';

@@ -1,10 +1,11 @@
 import {build} from 'esbuild';
-import {readFile,writeFile,mkdir,copyFile,access,unlink} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,copyFile,readdir,unlink} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {gzipSync} from 'node:zlib';
+import {buildSDK,CORE_SOURCE} from './build-sdk.mjs';
 const here=dirname(fileURLToPath(import.meta.url)), root=resolve(here,'../..');
 const output=resolve(root,'.build/avr-offline'), assets=resolve(root,'.build/avr-toolchain');
 await mkdir(output+'/toolchain',{recursive:true});await mkdir(assets,{recursive:true});
@@ -24,6 +25,10 @@ for(const name of names){
     if(bytes.length!==metadata.bytes||createHash('sha256').update(bytes).digest('hex')!==metadata.sha256)throw Error('Integrity failed: '+name);
     await writeFile(path,bytes);
   }
+}
+const runtime=await buildSDK({assets,here,upstream});
+for(const name of Object.keys(runtime.files)){
+  const path=assets+'/'+name;
   // The distributable only needs compressed bytes. Keep the raw build cache
   // in .build/avr-toolchain, not a second public copy in the application.
   await unlink(output+'/toolchain/'+name).catch(e=>{if(e.code!=='ENOENT')throw e;});
@@ -31,21 +36,30 @@ for(const name of names){
   await writeFile(output+'/toolchain/'+name+'.gz',compressed);
   packed[name]={bytes:compressed.length};
 }
+for(const name of await readdir(output+'/toolchain')){
+  if(/^sdk(?:-uno-nano(?:-[a-f0-9]{16})?)?\.bin(?:\.gz)?$/.test(name)&&name!==runtime.sdkFile+'.gz')await unlink(output+'/toolchain/'+name);
+}
 await writeFile(here+'/packed-manifest.json',JSON.stringify(packed,null,2)+'\n');
 // Notices and licences are fetched from the exact upstream release, outside the app bundle.
-for(const name of ['NOTICE.json','licenses.tar.gz']){
+const licenses=JSON.parse(await readFile(here+'/license-manifest.json','utf8'));
+for(const name of Object.keys(licenses.files)){
   const path=assets+'/'+name;
-  try{await access(path);}catch{
+  const expected=licenses.files[name];
+  const valid=async()=>{const b=await readFile(path);return b.length===expected.bytes&&createHash('sha256').update(b).digest('hex')===expected.sha256;};
+  try{if(!await valid())throw Error('License integrity');}catch{
     const r=spawnSync('curl',['-fsSL','--retry','2','--max-time','60','https://github.com/pcbkit-io/toolchain/releases/download/'+upstream.id+'/'+name,'-o',path],{stdio:'inherit'});
     if(r.status!==0)throw Error('Missing licence material: '+name);
   }
+  if(!await valid())throw Error('License integrity failed: '+name);
   await copyFile(path,output+'/toolchain/'+name);
 }
-const shared={bundle:true,platform:'browser',target:'es2022',define:{__APP_BUILD__:'"prototype"',__APP_BASE__:'"./"',__APP_VERSION__:'"0.15.7-prototype.1"'},logLevel:'warning'};
+await copyFile(assets+'/'+CORE_SOURCE.name,output+'/toolchain/'+CORE_SOURCE.name);
+await copyFile(here+'/core-build-manifest.json',output+'/toolchain/core-build-manifest.json');
+const shared={bundle:true,platform:'browser',target:'es2022',define:{__APP_BUILD__:'"prototype"',__APP_BASE__:'"./"',__APP_VERSION__:'"0.15.7-prototype.2"'},logLevel:'warning'};
 await build({...shared,entryPoints:[here+'/app.mjs'],format:'esm',outfile:output+'/app.js'});
 await build({...shared,entryPoints:[here+'/worker.ts'],format:'iife',outfile:output+'/worker.js'});
 for(const name of ['index.html','style.css','README.md'])await copyFile(here+'/'+name,output+'/'+name);
-await copyFile(here+'/upstream-manifest.json',output+'/toolchain/manifest.json');
+await copyFile(here+'/runtime-manifest.json',output+'/toolchain/manifest.json');
 const shell=['index.html','app.js','worker.js','style.css','README.md','toolchain/NOTICE.json'];
 const hash=createHash('sha256');for(const name of shell)hash.update(await readFile(output+'/'+name));
 const cache='labos-avr-prototype-shell-'+hash.digest('hex').slice(0,16);
