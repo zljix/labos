@@ -117,7 +117,11 @@
     "test:compiler-ui": "node scripts/test-compiler-ui.mjs",
     "test:workspace": "node --import tsx scripts/build-school-catalog.ts && node scripts/test-workspace.mjs",
     "test:offline-ui": "node scripts/test-offline-ui.mjs",
-    "test:offline-storage": "node --test verification/offline-storage.test.mjs"
+    "test:offline-storage": "node --test verification/offline-storage.test.mjs",
+    "prototype:avr:build": "node prototypes/avr-offline/build.mjs",
+    "prototype:avr:test": "node --import tsx --test prototypes/avr-offline/compiler.test.mjs",
+    "prototype:avr:browser": "node prototypes/avr-offline/browser-test.mjs",
+    "prototype:avr:worker": "node --test prototypes/avr-offline/worker-harness.test.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
