@@ -32,6 +32,8 @@ jedinstvene fizičke memorije niti samo Worker memorije. Rezultat je mjerenje
 CI hosta, ne školskog računala ili fizičkog mobitela. Mobilni prikaz je samo
 provjera širine 390 px.
 
+Prva uspješna provedba i sačuvani JSON dokazi: [EVIDENCE-03.md](EVIDENCE-03.md).
+
 ## Pokretanje na zasebnom Linux testnom računalu
 
 ```sh

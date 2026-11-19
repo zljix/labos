@@ -5,12 +5,12 @@ Korisnik je odredio `labosv2` kao odredište buduće objave nadograđenog Labosa
 Ovaj prototip je zaseban eksperiment na razvojnoj grani: ne mijenja glavnu
 aplikaciju, njezin service worker, postojeći ugovor rezultata ni glavne grane.
 **Status:** prevođenje i simulacija potvrđeni su u Node testovima i stvarnom
-pregledniku. Za prototip 02 provjereni su novi Uno/Nano izvori i ponovno
-otvaranje kartice uz ugašen poslužitelj. Provjere prekida i potpunog ponovnog
-pokretanja preglednika iz prototipa 01 ostaju zasebna ranija evidencija.
+Chromiumu. Prototip 02 prošao je i potpunu mrežnu izolaciju na zasebnom Linux
+CI hostu: novi Uno/Nano C/C++ izvori, dva puna pokretanja preglednika bez
+mreže, odbacivanje starog rezultata nakon pogreške, prekid i očuvanje podataka.
+Dokaz i preostale granice prihvata: [EVIDENCE-03.md](EVIDENCE-03.md).
 Prototip 02 dodaje zasebnu izgradnju jezgri, manji SDK i identitet paketa.
-Potpuna mrežna izolacija ostaje otvorena; vidi EVIDENCE-02.md.
-Ranije provjere prototipa 01 zadržane su u EVIDENCE.md.
+Ranije provjere sačuvane su u EVIDENCE-02.md i EVIDENCE.md.
 
 ## Pokretanje
 
@@ -132,5 +132,6 @@ radnom okruženju Playwright je dostupan iz primarnog runtimea.
 Automatski izvještaj je `.build/avr-offline-evidence.json`; ručno provedeni
 browser koraci zabilježeni su u `browser-evidence-02.json` (raniji u
 `browser-evidence.json`). Sažetak mjerenja i
-preostali koraci vode se u `EVIDENCE-02.md`. Mjerenja iz ovog okruženja nisu mjerenja na
+preostali koraci vode se u `EVIDENCE-03.md`; postupak pune mrežne izolacije
+opisan je u `ISOLATED-TEST.md`. Mjerenja iz ovog okruženja nisu mjerenja na
 školskom i5-6600 niti potvrda mobilne podrške.

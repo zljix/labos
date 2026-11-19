@@ -1,5 +1,9 @@
 # Prototip 02 — Uno/Nano jezgre, paket i provjera
 
+> Povijesni zapis druge etape. Naknadna potpuna mrežna izolacija i restart
+> preglednika potvrđeni su u [EVIDENCE-03.md](EVIDENCE-03.md). Otvorene stavke
+> pri dnu ovog zapisa prikazuju stanje prije te provjere.
+
 Rad je nastavljen s grane `prototype/arduino-offline-avr`, commit `2ced187`.
 Glavna aplikacija i `labosv2` nisu promijenjeni. Ovo je provjeren prototip,
 ne izdanje za učenike. Buduće odredište nadograđenog Labosa ostaje `labosv2`.
