@@ -6,24 +6,27 @@ Prototip je na zasebnoj razvojnoj grani. Prototip 04 dodaje uključivu
 integraciju u glavno sučelje; obična izgradnja ne uključuje novi način
 prevođenja. Glavne grane, CLI ugovor i bodovanje ostaju odvojeni.
 Postupak, opseg i provjera: [INTEGRATION.md](INTEGRATION.md).
-**Status:** prototip 03 prošao je ponovljivu izgradnju, 47 automatskih
-provjera i stvarni Chromium u potpunoj mrežnoj izolaciji. Potvrđen je novi
-izvor s AHT10/OLED/Servo bibliotekama, očuvanje projekta i ponovno prevođenje
-nakon potpunog restarta bez mreže. Aktualni dokazi i preostale granice:
-[EVIDENCE-05.md](EVIDENCE-05.md). Ranije etape sačuvane su u EVIDENCE-02.md,
-EVIDENCE-03.md, EVIDENCE-04.md i EVIDENCE.md.
+Uputa za glavno sučelje i zapis provjere na školskom računalu:
+[PILOT.md](PILOT.md).
+**Status:** prototip 04 prošao je 57 automatskih testova te samostalno i
+integrirano glavno sučelje u Chromiumu bez mreže. Potvrđeni su novi izvor,
+prevođenje i simulacija, izvoz/uvoz, potpuni restart i mobilni raspored na
+390 px. Aktualni dokazi i preostale granice: [EVIDENCE-06.md](EVIDENCE-06.md).
+Pilot na stvarnim školskim računalima i mobitelima još nije proveden.
+Ranije etape sačuvane su u EVIDENCE.md i EVIDENCE-02.md do EVIDENCE-05.md.
 
 Dodana je razvojna poveznica sa stvarnim Labos projektima: uvoz JSON-a,
 izmjena izvora, izvođenje uvezenog sklopa i odvojeni izvoz projekta/rezultata.
-Postupak i ograničenja: [PROJECT-BRIDGE.md](PROJECT-BRIDGE.md). Ova funkcija
-ne mijenja postojeći Arduino CLI format ni glavno sučelje Labosa.
-Prošla je i proširena provjera projekta u mrežnoj izolaciji; dokazi i
-trenutačno stanje nastavka: [EVIDENCE-04.md](EVIDENCE-04.md).
+Postupak i ograničenja samostalne stranice: [PROJECT-BRIDGE.md](PROJECT-BRIDGE.md).
+Poveznica ne mijenja postojeći Arduino CLI format; integracija u glavno
+sučelje zasebno je dodana u prototipu 04.
+Proširena provjera poveznice sa samostalnim prototipom opisana je u
+[EVIDENCE-04.md](EVIDENCE-04.md).
 
 Prototip 03 dodaje svih deset zaključanih Labos biblioteka te Wire/SPI/EEPROM.
 Opis opsega: [LIBRARIES.md](LIBRARIES.md). Rezultati: [EVIDENCE-05.md](EVIDENCE-05.md).
 
-## Pokretanje
+## Pokretanje samostalnog prototipa
 
 Razvojno računalo:
 
@@ -148,6 +151,6 @@ radnom okruženju Playwright je dostupan iz primarnog runtimea.
 Automatski izvještaj je `.build/avr-offline-evidence.json`; ručno provedeni
 browser koraci zabilježeni su u `browser-evidence-02.json` (raniji u
 `browser-evidence.json`). Sažetak mjerenja i
-preostali koraci vode se u `EVIDENCE-03.md`; postupak pune mrežne izolacije
+rezultati ranije faze vode se u `EVIDENCE-03.md`; postupak pune mrežne izolacije
 opisan je u `ISOLATED-TEST.md`. Mjerenja iz ovog okruženja nisu mjerenja na
 školskom i5-6600 niti potvrda mobilne podrške.

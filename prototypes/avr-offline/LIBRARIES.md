@@ -18,7 +18,7 @@ Arduino AVR jezgre 1.8.8.
 | OneWire | 2.3.8 | 1-Wire sabirnica |
 | DallasTemperature | 4.0.6 | DS18B20; zahtijeva OneWire |
 
-## Rad učenika
+## Rad učenika u samostalnom prototipu
 
 Uvezi postojeći Uno/Nano projekt: odabir se prenosi iz
 `arduino-libraries.json`. Za samostalan izvor označi potrebne biblioteke.
@@ -32,6 +32,20 @@ DHT22 primjer najprije čeka 2,1 s i zato treba barem 3 s. Najviše je
 ulaza tijekom izvođenja. Rezultat prikazuje serijski ispis, stanje
 servo motora i tekst LCD-a odnosno broj popunjenih bajtova OLED slike.
 Graf i dalje prikazuje samo D13.
+
+## Integracija u glavno sučelje (prototip 04)
+
+Glavni Labos koristi svoj odjeljak **Biblioteke i datoteke programa**.
+Ondje prvo označi OneWire, zatim DallasTemperature; nepotpun odabir
+prikazuje poruku i ne mijenja projekt. Prije uklanjanja OneWire ukloni
+DallasTemperature. Pravilo automatskog uključivanja ovisnosti iz prethodnog
+odjeljka odnosi se samo na samostalnu stranicu prototipa.
+
+Integracija koristi živi simulator glavne aplikacije, s interaktivnim
+ulazima i uobičajenim prikazom sklopa. Odabir trajanja 1,2 / 3 / 5 s i
+završni broj popunjenih bajtova OLED-a odnose se na samostalni prototip.
+Priprema oba offline paketa i rad u glavnom sučelju opisani su u
+[INTEGRATION.md](INTEGRATION.md), a provjera na uređajima u [PILOT.md](PILOT.md).
 
 ## Izgradnja i identitet
 

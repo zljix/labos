@@ -64,6 +64,10 @@ CI prvo ponavlja postojeći samostalni prototip, zatim gradi cijeli Labos na
 uvoz, dijalog i konzolu, zaseban trajni profil te potpuni restart u odvojenom
 Linux mrežnom prostoru sa samo isključenim loopback sučeljem. Ne briše
 predmemorije ni profile između faza. Izvještaji i snimke su CI artefakti.
-Dok test ne završi uspješno, sama prisutnost skripte nije potvrda prihvata.
+Provjera commita `a9851df` uspješno je završena, uključujući puni restart
+glavne aplikacije bez mreže. Dokazi i točan opseg: [EVIDENCE-06.md](EVIDENCE-06.md).
+Sama prisutnost skripte nije potvrda prolaza buduće izmijenjene verzije.
 
 Školski i5-6600, fizički mobiteli i Safari/iOS zahtijevaju zaseban pilot.
+Uputa za pripremu, provjera na uređaju i obrazac mjerenja:
+[PILOT.md](PILOT.md).
