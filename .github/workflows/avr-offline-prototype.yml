@@ -9,6 +9,10 @@ on:
       - 'vendor/arduino/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'src/**'
+      - 'verification/offline-avr.test.ts'
+      - 'scripts/offline-plugin.mjs'
+      - 'vite.config.ts'
   workflow_dispatch:
 
 permissions:
@@ -53,6 +57,17 @@ jobs:
           test_runner_user="$(id -un)"
           test_node_path="$(command -v node)"
           sudo unshare --net -- runuser -u "$test_runner_user" -- "$test_node_path" prototypes/avr-offline/isolated-browser-test.mjs isolated
+      - name: Provjeri integraciju u glavno sučelje
+        run: |
+          npm run prototype:avr:integration-test
+          LAB_BASE_PATH=/avr-integrated/ npm run prototype:avr:integrated
+          node prototypes/avr-offline/integrated-browser-test.mjs prepare
+      - name: Glavni Labos i restart bez mreže
+        shell: bash
+        run: |
+          test_runner_user="$(id -un)"
+          test_node_path="$(command -v node)"
+          sudo unshare --net -- runuser -u "$test_runner_user" -- "$test_node_path" prototypes/avr-offline/integrated-browser-test.mjs isolated
       - name: Spremi samo rezultate provjere
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,6 +75,7 @@ jobs:
           name: AVR-offline-proof-${{ github.sha }}
           path: |
             .build/avr-isolated-evidence/
+            .build/avr-integrated-evidence/
             .build/avr-prototype-node-evidence.json
             .build/avr-library-evidence.json
           retention-days: 30

@@ -1,9 +1,11 @@
-# Arduino offline — prototip 03
+# Arduino offline — prototip 04
 
 Osnova: `zljix/labos`, 0.15.7-beta.1, commit `b5bc958`.
 Korisnik je odredio `labosv2` kao odredište buduće objave nadograđenog Labosa.
-Ovaj prototip je zaseban eksperiment na razvojnoj grani: ne mijenja glavnu
-aplikaciju, njezin service worker, postojeći ugovor rezultata ni glavne grane.
+Prototip je na zasebnoj razvojnoj grani. Prototip 04 dodaje uključivu
+integraciju u glavno sučelje; obična izgradnja ne uključuje novi način
+prevođenja. Glavne grane, CLI ugovor i bodovanje ostaju odvojeni.
+Postupak, opseg i provjera: [INTEGRATION.md](INTEGRATION.md).
 **Status:** prototip 03 prošao je ponovljivu izgradnju, 47 automatskih
 provjera i stvarni Chromium u potpunoj mrežnoj izolaciji. Potvrđen je novi
 izvor s AHT10/OLED/Servo bibliotekama, očuvanje projekta i ponovno prevođenje

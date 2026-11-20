@@ -125,7 +125,9 @@
     "prototype:avr:package": "node --test prototypes/avr-offline/package.test.mjs",
     "prototype:avr:sources": "node prototypes/avr-offline/prepare-sources.mjs",
     "prototype:avr:memory": "node prototypes/avr-offline/measure-memory.mjs",
-    "prototype:avr:libraries": "node --import tsx --test prototypes/avr-offline/libraries.test.ts"
+    "prototype:avr:libraries": "node --import tsx --test prototypes/avr-offline/libraries.test.ts",
+    "prototype:avr:integrated": "LAB_OFFLINE_AVR=1 npm run build",
+    "prototype:avr:integration-test": "node --import tsx --test verification/offline-avr.test.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",

@@ -5,7 +5,7 @@ import {sha256} from '../../public/avr-contract.mjs';
 export const FILES=runtime.files;
 export const SDK_FILE=runtime.sdkFile;
 export const CACHE = 'labos-avr-prototype-1-'+upstream.files['sdk.bin'].sha256.slice(0,12);
-export const assetURL = name => new URL('toolchain/'+name, self.location.href).href;
+export const assetURL = (name,base=self.location.href) => new URL('toolchain/'+name, base).href;
 export const PACKED_BYTES=Object.values(packed).reduce((n,f)=>n+f.bytes,0);
 const CODEC='X-Labos-Compression';
 async function boundedRead(stream,limit) {
@@ -29,19 +29,19 @@ export async function verifyBytes(name,bytes) {
   if(!expected || bytes.byteLength!==expected.bytes || await sha256(bytes)!==expected.sha256)throw Error('Oštećena ili nepotpuna datoteka prevoditelja: '+name);
   return bytes;
 }
-export async function packageStatus(progress=()=>{}) {
+export async function packageStatus(progress=(_done,_total)=>{},base=self.location.href) {
   const cache=await caches.open(CACHE); let total=0;
   for(const name of Object.keys(FILES)) {
-    const response=await cache.match(assetURL(name));
+    const response=await cache.match(assetURL(name,base));
     if(!response)throw Error('Paket još nije spremljen: '+name);
     await decodeResponse(name,response); total++; progress(total,Object.keys(FILES).length);
   }
   return true;
 }
-export async function installPackage(progress=()=>{}) {
+export async function installPackage(progress=(_done,_total)=>{},base=self.location.href) {
   const cache=await caches.open(CACHE); let done=0;
   for(const name of Object.keys(FILES)) {
-    const url=assetURL(name), previous=await cache.match(url);
+    const url=assetURL(name,base), previous=await cache.match(url);
     let valid=false,raw;
     if(previous)try{raw=await decodeResponse(name,previous.clone());valid=true;}catch{}
     // Replace only this prototype's own verified entry, never clear a cache.
@@ -60,12 +60,12 @@ export async function installPackage(progress=()=>{}) {
     done+=packed[name].bytes; progress(done,PACKED_BYTES);
   }
   // No ready flag: every compile verifies every byte it uses, including after browser eviction.
-  await packageStatus();
+  await packageStatus(()=>{},base);
 }
-export async function readPackage() {
+export async function readPackage(base=self.location.href) {
   const cache=await caches.open(CACHE), files=new Map();
   for(const name of Object.keys(FILES)) {
-    const response=await cache.match(assetURL(name));
+    const response=await cache.match(assetURL(name,base));
     if(!response)throw Error('Nedostaje offline paket. Pritisni Pripremi paket dok si na mreži.');
     files.set(name,await decodeResponse(name,response));
   }

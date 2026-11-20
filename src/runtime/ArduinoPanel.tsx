@@ -13,7 +13,7 @@ import {arduinoSubmission,cachedBuild,rememberBuild,clearBuildCache,readArduinoW
 import type {ArduinoCompiler} from './useArduinoCompiler';
 import './arduino.css';
 
-export function ArduinoBuildPanel({project,importBuild,compiler,setLibraries,goTo,consoleText,compileContext}:{project:Project;importBuild:(text:string,input:string)=>void;compiler:ArduinoCompiler;setLibraries:(text:string)=>void;goTo:(d:BuildDiagnostic)=>void;consoleText:string;compileContext?:CompileContext}){
+export function ArduinoBuildPanel({project,importBuild,compiler,setLibraries,goTo,consoleText,compileContext,offline=false}:{project:Project;importBuild:(text:string,input:string)=>void;compiler:ArduinoCompiler;setLibraries:(text:string)=>void;goTo:(d:BuildDiagnostic)=>void;consoleText:string;compileContext?:CompileContext;offline?:boolean}){
   const file=useRef<HTMLInputElement>(null),current=useRef(project),mounted=useRef(true);current.current=project;
   const [status,setStatus]=useState('Provjera programa…'),[valid,setValid]=useState(false),[busy,setBusy]=useState(false),[link,setLink]=useState(''),[messages,setMessages]=useState<BuildDiagnostic[]>([]),[log,setLog]=useState(''),[work,setWork]=useState(()=>readArduinoWork(project));
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;compiler.cancel();};},[]);
@@ -47,6 +47,7 @@ export function ArduinoBuildPanel({project,importBuild,compiler,setLibraries,goT
     setBusy(true);try{const snapshot=current.current,p=await arduinoSubmission(await projectWithBuild(snapshot),work,consoleText);if(current.current.revision!==snapshot.revision||current.current.id!==snapshot.id)throw Error('Projekt je promijenjen. Ponovi pripremu predaje.');download(safeFilename(p.title)+'_predaja.zip',exportZip(p),'application/zip');setStatus('ZIP za predaju sadrži izvor, sklop, prevedeni program, tvoje podatke, opažanja i serijski zapis.');}catch(e){setStatus((e as Error).message);}finally{setBusy(false);}
   }
   return <div className="arduino-build">
+    <details open={!offline}><summary hidden={!offline}>Školski i lokalni prevoditelj</summary>
     <p className={valid?'build-valid':'build-pending'} role="status">{status}</p>
     <section className="compiler-connect">
       <h3>Gdje se program prevodi?</h3>
@@ -65,6 +66,7 @@ export function ArduinoBuildPanel({project,importBuild,compiler,setLibraries,goT
       <div className="build-actions"><button className="primary" disabled={busy||!!libraryError||readSchoolBinding(compileContext?.parent??project)?.status==='locked'} onClick={()=>void compile()}>{busy?'Prevođenje…':'Prevedi program'}</button>{busy&&<button onClick={compiler.cancel}>Otkaži prevođenje</button>}<button disabled={busy} onClick={()=>{try{clearBuildCache();setStatus('Predmemorija prevoditelja u ovom pregledniku je obrisana. Spremljeni projekti ostaju dostupni.');}catch{setStatus('Brisanje predmemorije nije dostupno.');}}}>Očisti predmemoriju</button></div>
       <p className="build-small">Provjereni rezultat istog izvora može se ponovno pokrenuti. Na GitHub Pagesu koristi pripremljene primjere ili odaberi lokalni prevoditelj. Školsko prevođenje dostupno je na školskoj adresi; privremeni rezultat ne mijenja službene bodove.</p>
     </section>
+    </details>
     <details open className="library-picker"><summary>Biblioteke i datoteke programa</summary>
       <p>Biblioteka je skup gotovih C++ funkcija. Odabir se sprema u projekt i određuje rezultat prevođenja. <code>Wire</code> i <code>SPI</code> dostupni su u deklariranom opsegu odabranog izvršnog profila. {s3&&<>S3 traži izričite pinove u begin(). Priloženi C++ izvori trebaju deklaracije funkcija prije uporabe; nema automatskog dodavanja prototipova.</>}</p>
       {libraryError&&<p role="alert">{libraryError}</p>}

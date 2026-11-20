@@ -63,6 +63,8 @@ import {UNO} from '../boards/profiles';
 import {AVR_BUILD_FILE,AVR_LIBRARY_FILE,validArduinoPath} from '../../public/avr-contract.mjs';
 import {buildInput,buildFile,validateArtifact} from '../../public/arduino-contract.mjs';
 import {s3Examples,loadS3Example,type S3Example} from '../runtime/s3Examples';
+import OfflineAvrPanel from '../runtime/OfflineAvrPanel';
+import {OFFLINE_AVR,prefersOffline,loadOffline,preferStandard,importIntegratedProject,saveOffline} from '../runtime/offlineAvr';
 import {useArduinoCompiler} from '../runtime/useArduinoCompiler';
 import {cachedBuild} from '../runtime/arduinoBuild';
 import {APP_VERSION,APP_STAGE,APP_RELEASE_TITLE} from '../platform/assets';
@@ -419,12 +421,12 @@ export default function App() {
     await action(async () => {
       if (file.size > LIMITS.archiveBytes)
         throw Error("Najveća veličina paketa je 2 MiB.");
-      const next = importProject(
-        new Uint8Array(await file.arrayBuffer()),
-        file.name,
-      );
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      const imported=OFFLINE_AVR?await importIntegratedProject(bytes,file.name):{project:importProject(bytes,file.name),result:null};
+      const next=imported.project,copy=forkProject(next);
       runtime.stop();
-      await ws.add(forkProject(next));
+      await ws.add(copy);
+      if(imported.result)await saveOffline(copy,imported.result);
       setDialog(null);
       setLabTab(readWork(next)||next.files[URS_WORK]?"lesson":"circuit");setMobileTab("lab");
       notify("Projekt je uvezen kao zasebna kopija. Program nije pokrenut.");
@@ -638,7 +640,7 @@ export default function App() {
   const s = p.settings,
     active = s.activeFile,
     example = s.example.startsWith("optical-") ? opticalExamples[s.example.slice(8) as OpticalExample] : s.example.startsWith("sd-") ? sdExamples[s.example.slice(3) as SDExample] : s.example.startsWith("rtc-") ? rtcExamples[s.example.slice(4) as RTCExample] : s.example.startsWith("s3-") ? s3Examples[s.example.slice(3) as S3Example] : s.example.startsWith("avr-") ? arduinoExamples[s.example.slice(4) as ArduinoExample] : s.example.startsWith("env-") ? environmentExamples[s.example.slice(4) as EnvironmentExample] : s.example === "peripheral-regulator" ? peripheralExample : s.example.startsWith("basic-") ? basicExamples[s.example.slice(6) as BasicExample] : (examples as Record<string, { hint: string }>)[s.example];
-  const run = async () => {
+  const run = async (reset=false) => {
     if(p?.radio){runtime.stop(true);openDialog("radio");return;}
     const ticket=++runTicket.current;
     setTab("console");
@@ -646,9 +648,9 @@ export default function App() {
     if(!availability.available){notify(availability.message);return;}
     if(lessonCheck.busy)return;
     if(p.language==='arduino-cpp'){
-      try{const snapshot=clone(p),raw=snapshot.files[buildFile(snapshot)];let a:any=null;try{if(raw)a=await validateArtifact(snapshot,JSON.parse(raw));}catch{}if(!a){a=await cachedBuild(snapshot);if(!a)throw Error('Najprije prevedi program.');snapshot.files[buildFile(snapshot)]=JSON.stringify(a);}if(ticket!==runTicket.current||liveProject.current?.id!==snapshot.id||liveProject.current?.revision!==snapshot.revision)return;void runtime.run(snapshot);}
+      try{const snapshot=clone(p);if(OFFLINE_AVR&&prefersOffline(snapshot)){const artifact=await loadOffline(snapshot);if(ticket!==runTicket.current||liveProject.current?.id!==snapshot.id||liveProject.current?.revision!==snapshot.revision)return;void runtime.run(snapshot,reset,artifact);return;}const raw=snapshot.files[buildFile(snapshot)];let a:any=null;try{if(raw)a=await validateArtifact(snapshot,JSON.parse(raw));}catch{}if(!a){a=await cachedBuild(snapshot);if(!a)throw Error('Najprije prevedi program.');snapshot.files[buildFile(snapshot)]=JSON.stringify(a);}if(ticket!==runTicket.current||liveProject.current?.id!==snapshot.id||liveProject.current?.revision!==snapshot.revision)return;void runtime.run(snapshot,reset);}
       catch{openDialog('arduino');notify('Prevedi aktualni izvor prije pokretanja.');}
-    }else void runtime.run(clone(p));
+    }else void runtime.run(clone(p),reset);
   };
   return (
     <div className="app-shell">
@@ -763,7 +765,7 @@ export default function App() {
             <span className="dot" />
             {runLabels[runtime.state]}
           </button>
-          <button className="run-button" onClick={run} disabled={runtime.busy || lessonCheck.busy || !availability.available} title={availability.message}>
+          <button className="run-button" onClick={()=>void run()} disabled={runtime.busy || lessonCheck.busy || !availability.available} title={availability.message}>
             <Icon name="play" size={16} />
             Pokreni
           </button>
@@ -778,7 +780,7 @@ export default function App() {
           </button>
           <button
             className="icon-button"
-            onClick={() => {if(p.radio){runtime.stop(true);openDialog("radio");}else if(!lessonCheck.busy)void runtime.run(clone(p), true);}}
+            onClick={() => {if(p.radio){runtime.stop(true);openDialog("radio");}else if(!lessonCheck.busy)void run(true);}}
             disabled={lessonCheck.busy || !availability.available}
             title="Resetiraj i pokreni u čistom okruženju"
             aria-label="Resetiraj program"
@@ -787,7 +789,7 @@ export default function App() {
           </button>
         </div>
       </div>
-      {p.language==='arduino-cpp'&&<div className="target-strip" role="status"><span><b>{boardProfile.title} · Arduino C/C++</b> — {p.board.id===S3?'funkcionalni WASM':'AVR simulacija'} · {compiler.mode==='school'&&compiler.capabilities.targets?.[p.board.id]?.ready?'školski prevoditelj spreman':compiler.connection==='connected'?'lokalni prevoditelj povezan':'odaberi prevoditelj u prozoru Prevedi'}.</span>{p.board.id!==S3&&<span className={`avr-indicator ${runtime.simulation?.gpios[13]?.level===1?'on':''}`}><i/>LED L · D13</span>}<button onClick={()=>openDialog('arduino')}>Prevođenje i program</button><button onClick={()=>openDialog('matrix')}>Matrica podrške</button></div>}
+      {p.language==='arduino-cpp'&&<div className="target-strip" role="status"><span><b>{boardProfile.title} · Arduino C/C++</b> — {p.board.id===S3?'funkcionalni WASM':'AVR simulacija'} · {OFFLINE_AVR&&prefersOffline(p)?'offline prototip u pregledniku':compiler.mode==='school'&&compiler.capabilities.targets?.[p.board.id]?.ready?'školski prevoditelj spreman':compiler.connection==='connected'?'lokalni prevoditelj povezan':'odaberi prevoditelj u prozoru Prevedi'}.</span>{p.board.id!==S3&&<span className={`avr-indicator ${runtime.simulation?.gpios[13]?.level===1?'on':''}`}><i/>LED L · D13</span>}<button onClick={()=>openDialog('arduino')}>Prevođenje i program</button><button onClick={()=>openDialog('matrix')}>Matrica podrške</button></div>}
       {(offline.update || !offline.online) && <div className="offline-strip" role="status"><span>{offline.update ? 'Nova verzija je pripremljena. Projekt spremi prije ažuriranja.' : offline.phase === 'ready' ? 'Radiš bez mreže. Projekti se spremaju u ovom pregledniku.' : 'Nema mreže; offline paket još nije potvrđen. Sačuvaj ZIP projekta.'}</span><button onClick={() => openDialog('system')}>Otvori status</button></div>}
       <input
         ref={importRef}
@@ -1347,7 +1349,8 @@ export default function App() {
         >
           {dialog==='class-review'&&<Suspense fallback={<p className="dialog-form">Učitavanje pregleda predaja…</p>}><ClassReviewPanel session={reviewSession} change={setReviewSession} busy={reviewBusy} setBusy={setReviewBusy} current={p} open={openClassSubmission}/></Suspense>}
           {dialog==='radio'&&<RadioPanel key={p.id} project={p} compiler={compiler} change={ws.change} save={ws.flush} create={async next=>{await ws.flush();runtime.stop();lessonCheck.cancel();await ws.add(next);}}/>}
-          {dialog==='arduino'&&<ArduinoBuildPanel key={p.id} project={p} compiler={compiler} consoleText={runtime.runRevision===p.revision?runtime.consoleText:''} setLibraries={text=>{runtime.stop();ws.change('Odabrane Arduino biblioteke',n=>{n.files[AVR_LIBRARY_FILE]=text;});}} goTo={d=>{if(!Object.hasOwn(p.files,d.file))return;ws.change('Otvorena datoteka pogreške',n=>{n.settings.activeFile=d.file;});setReveal({path:d.file,line:d.line,column:d.column,token:Date.now()});setDialog(null);setMobileTab('code');}} importBuild={(text,input)=>{runtime.stop();const live=liveProject.current;if(!live||live.id!==p.id||JSON.stringify(buildInput(live))!==input)throw Error('Projekt je promijenjen.');if(readSchoolBinding(live)){if(readSchoolBinding(live)?.status==='locked')throw Error('Predaja je zaključana.');notify('Prijevod je spreman za pokretanje; školska revizija ostaje ista.');return;}const saved=ws.change('Preveden Arduino program',n=>{if(JSON.stringify(buildInput(n))!==input)throw Error('Projekt se promijenio tijekom prevođenja. Ponovi prevođenje.');n.files[buildFile(n)]=text;});if(!saved)throw Error('Rezultat nije spremljen u projekt. Provjeri veličinu i datoteke projekta.');notify('Prevedeni program spremljen je u projekt.');}}/>}
+          {dialog==='arduino'&&OFFLINE_AVR&&p.runtimeProfile.id==='arduino-avr'&&!p.radio&&<OfflineAvrPanel key={'offline-'+p.id} project={p} stop={()=>runtime.stop()} run={()=>{setDialog(null);void run();}}/>}
+          {dialog==='arduino'&&<ArduinoBuildPanel offline={OFFLINE_AVR&&p.runtimeProfile.id==='arduino-avr'&&!p.radio} key={p.id} project={p} compiler={compiler} consoleText={runtime.runRevision===p.revision?runtime.consoleText:''} setLibraries={text=>{runtime.stop();ws.change('Odabrane Arduino biblioteke',n=>{n.files[AVR_LIBRARY_FILE]=text;});}} goTo={d=>{if(!Object.hasOwn(p.files,d.file))return;ws.change('Otvorena datoteka pogreške',n=>{n.settings.activeFile=d.file;});setReveal({path:d.file,line:d.line,column:d.column,token:Date.now()});setDialog(null);setMobileTab('code');}} importBuild={(text,input)=>{runtime.stop();const live=liveProject.current;if(!live||live.id!==p.id||JSON.stringify(buildInput(live))!==input)throw Error('Projekt je promijenjen.');if(readSchoolBinding(live)){if(readSchoolBinding(live)?.status==='locked')throw Error('Predaja je zaključana.');notify('Prijevod je spreman za pokretanje; školska revizija ostaje ista.');return;}const saved=ws.change('Preveden Arduino program',n=>{if(JSON.stringify(buildInput(n))!==input)throw Error('Projekt se promijenio tijekom prevođenja. Ponovi prevođenje.');n.files[buildFile(n)]=text;});if(!saved)throw Error('Rezultat nije spremljen u projekt. Provjeri veličinu i datoteke projekta.');preferStandard(live);notify('Prevedeni program spremljen je u projekt.');}}/>}
           {dialog === 'board' &&<BoardChangePanel project={p} busy={working} error={formError} create={(id,language)=>{setWorking(true);setFormError('');void (async()=>{try{const derived=deriveProject(p,id,language);await ws.flush();runtime.stop();lessonCheck.cancel();await ws.add(derived);setDialog(null);setLabTab('circuit');setMobileTab('lab');notify('Otvorena je izvedena kopija s novom pločicom.');}catch(e){setFormError((e as Error).message);}finally{setWorking(false);}})();}}/>}
           {dialog === 'matrix'&&<SupportMatrix board={p.board.id} language={p.language}/>}
           {dialog === "lessons" && <LessonCatalog open={(id,solution)=>void selectLesson(id,solution)} openUrs={(lesson,variant,target,peer)=>void selectUrs(lesson,variant,target,peer)} initialTarget={targetForProject(p)} busy={working} reviewClass={()=>openDialog('class-review')}/>}
