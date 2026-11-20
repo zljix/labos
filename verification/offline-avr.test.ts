@@ -7,7 +7,7 @@ import {arduinoExampleProject} from '../src/runtime/arduinoExamples';
 import {UNO,NANO,S3} from '../src/boards/profiles';
 import {compile,unpackSDK} from '../prototypes/avr-offline/compiler.mjs';
 import runtime from '../prototypes/avr-offline/runtime-manifest.json';
-import {OfflineCompileTask,offlineInput,offlineIdentity,beginOffline,saveOffline,loadOffline,prefersOffline,importIntegratedProject} from '../src/runtime/offlineAvr';
+import {OfflineCompileTask,offlineInput,offlineIdentity,beginOffline,saveOffline,loadOffline,prefersOffline,preferStandard,importIntegratedProject} from '../src/runtime/offlineAvr';
 import {validateArtifact,libraryManifest,AVR_LIBRARIES} from '../public/avr-contract.mjs';
 import {assetURL} from '../prototypes/avr-offline/package.mjs';
 const dir=resolve('.build/avr-toolchain'),require=createRequire(import.meta.url);
@@ -68,4 +68,12 @@ test('prototype export imports as project and validated separate result',async()
  assert.equal(imported.project.id,p.id);assert.equal(imported.result.hexHash,result.hexHash);
  bundle.result.hex+='x';await assert.rejects(()=>importIntegratedProject(new TextEncoder().encode(JSON.stringify(bundle)),'bad.json'),/Oštećen/);
  const standard=await importIntegratedProject(new TextEncoder().encode(JSON.stringify(p)),'normal.json');assert.equal(standard.result,null);
+});
+
+test('selecting the standard compiler removes offline result and run preference',async()=>{
+ const previous=globalThis.localStorage,m=new Map<string,string>();
+ const storage={getItem:(k:string)=>m.get(k)??null,setItem:(k:string,v:string)=>{m.set(k,v);},removeItem:(k:string)=>{m.delete(k);}};
+ Object.assign(globalThis,{localStorage:storage});
+ try{const q=structuredClone(p);q.id=crypto.randomUUID();await saveOffline(q,result);assert(prefersOffline(q));preferStandard(q);assert.equal(prefersOffline(q),false);await assert.rejects(()=>loadOffline(q));}
+ finally{Object.assign(globalThis,{localStorage:previous});}
 });

@@ -11,6 +11,7 @@ on:
       - 'package-lock.json'
       - 'src/**'
       - 'verification/offline-avr.test.ts'
+      - 'verification/compiler-ui.test.tsx'
       - 'scripts/offline-plugin.mjs'
       - 'vite.config.ts'
   workflow_dispatch:
@@ -60,6 +61,7 @@ jobs:
       - name: Provjeri integraciju u glavno sučelje
         run: |
           npm run prototype:avr:integration-test
+          npm run test:compiler-ui
           LAB_BASE_PATH=/avr-integrated/ npm run prototype:avr:integrated
           node prototypes/avr-offline/integrated-browser-test.mjs prepare
       - name: Glavni Labos i restart bez mreže

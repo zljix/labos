@@ -39,7 +39,7 @@ async function run(marker){
 }
 async function edit(code){
  const editor=page.locator('.cm-content');await editor.click();await editor.press('ControlOrMeta+a');await page.keyboard.insertText(code);
- await page.waitForFunction(()=>!document.querySelector('.save-state.saving'),null,{timeout:10000});
+ await page.locator('.save-state.saved').waitFor({timeout:10000});
 }
 async function savedProject(){return page.evaluate(async()=>{
  const db=await new Promise((ok,bad)=>{const r=indexedDB.open('esp32-micropython-lab-v2',1);r.onsuccess=()=>ok(r.result);r.onerror=()=>bad(r.error);});
@@ -58,6 +58,7 @@ try{
   context=await chromium.launchPersistentContext(profile,{headless:true,viewport:{width:1440,height:1100},args:['--no-sandbox']});page=await context.newPage();page.on('pageerror',e=>evidence.errors.push(e.message));
   await page.goto(origin);await page.locator('input[accept=".zip,.json"]').waitFor({state:'attached'});
   await page.locator('input[accept=".zip,.json"]').setInputFiles({name:'integrated.json',mimeType:'application/json',buffer:await readFile('.build/avr-integrated-fixture.json')});
+  await page.waitForFunction(()=>document.querySelector('.cm-content')?.textContent.includes('INTEGRATED_FIXTURE'));
   await page.getByRole('button',{name:'Prevedi',exact:true}).waitFor();
   await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:120000});
   await panel();await page.getByRole('button',{name:'Pripremi offline prevoditelj',exact:true}).click();await compile();await run('INTEGRATED_FIXTURE');
@@ -84,16 +85,18 @@ try{
   evidence.checks.push('Syntax error blocks old result through both offline button and main Run button');
   await page.getByRole('button',{name:'Zatvori prozor',exact:true}).click();
   await page.locator('input[accept=".zip,.json"]').setInputFiles({name:'restored_offline.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(bundle))});
+  await page.waitForFunction(m=>document.querySelector('.cm-content')?.textContent.includes(m),marker);
   await panel();await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Pokreni offline rezultat'&&!b.disabled));await run(marker);
   evidence.checks.push('Exported prototype bundle reimported into main app, validated and executed without auto-run');
   const restored=await savedProject();await close();await open();assert.equal((await savedProject()).id,restored.id);
   // Run persisted output, then change and compile once more after full restart.
   await panel();await run(marker);const second=marker.replace('MAIN_OFFLINE_','RESTART_OFFLINE_');await edit(code.replace(marker,second));await panel();await compile();await run(second);
+  evidence.checks.push('Full browser restart in isolation, persisted output executed, another new source compiled and run');
   await page.setViewportSize({width:390,height:844});await panel();
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:reports+'/mobile.png',fullPage:true});
   await page.setViewportSize({width:1440,height:1100});await page.screenshot({path:reports+'/desktop.png',fullPage:true});
   const sentinel=await page.evaluate(async()=>({local:localStorage.getItem('integrated-sentinel'),cache:await (await (await caches.open('integrated-sentinel')).match('/sentinel')).text()}));assert.deepEqual(sentinel,{local:'preserve',cache:'preserve'});
-  evidence.checks.push('Full browser restart, persisted output, another new source, responsive layout and unrelated storage preserved');
+  evidence.checks.push('390 px and desktop compiler dialog checked; unrelated storage preserved');
  }
  assert.deepEqual(evidence.errors,[]);evidence.success=true;
 }catch(e){evidence.error=e.stack;process.exitCode=1;console.error(e);}finally{

@@ -27,3 +27,19 @@ test('25A rendered compiler: school selection, stale result rejection and clicka
  compiler.compile=async()=>{throw Object.assign(Error('bad source'),{diagnostics:[{file:'main.ino',line:2,column:3,severity:'error',message:'expected ;'}]});};
  await render();await click('Prevedi program');await React.act(async()=>{await new Promise(r=>setTimeout(r,30));});await click('main.ino:2:3');assert.equal(revealed.line,2);assert.equal(revealed.column,3);
 });
+
+test('offline library selection errors remain visible with the standard compiler collapsed',async t=>{
+ const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'https://prototype.test/'});
+ const names=['window','document','HTMLElement','localStorage','IS_REACT_ACT_ENVIRONMENT'];
+ const prior=Object.fromEntries(names.map(k=>[k,(globalThis as any)[k]]));Object.assign(globalThis,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true});
+ const {createRoot}=await import('react-dom/client'),root=createRoot(document.getElementById('root')!);
+ t.after(async()=>{await React.act(async()=>root.unmount());Object.assign(globalThis,prior);dom.window.close();});
+ const compiler:any={mode:'school',setMode:()=>{},capabilities:{targets:{}},refreshSchool:async()=>{},connection:'disconnected',message:'',cancel:()=>{}};
+ const project=arduinoExampleProject('blink',UNO);let changes=0;
+ await React.act(async()=>root.render(<ArduinoBuildPanel offline project={project} compiler={compiler} consoleText="" importBuild={()=>{}} setLibraries={()=>{changes++;}} goTo={()=>{}}/>));
+ await React.act(async()=>{const label=[...document.querySelectorAll('.library-picker label')].find(l=>l.textContent?.includes('DallasTemperature'));assert(label);(label.querySelector('input') as HTMLInputElement).click();});
+ const alert=document.querySelector('.library-picker [role="alert"]');assert(alert);assert.match(alert.textContent??'',/OneWire/);
+ assert.equal((alert.closest('details') as HTMLDetailsElement).open,true);assert.equal(changes,0);
+ assert.equal((document.querySelector('.arduino-build > details') as HTMLDetailsElement).open,false);
+ assert.match(document.querySelector('.library-picker')?.textContent??'',/podmape još nisu podržane/);
+});

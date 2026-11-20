@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {Project} from '../project/model';
 import {appAsset} from '../platform/assets';
 import {installPackage,packageStatus,PACKED_BYTES} from '../../prototypes/avr-offline/package.mjs';
-import {OfflineCompileTask,offlineIdentity,beginOffline,saveOffline,loadOffline} from './offlineAvr';
+import {OfflineCompileTask,offlineIdentity,beginOffline,saveOffline,loadOffline,prefersOffline} from './offlineAvr';
 import {download,safeFilename} from '../project/archive';
 import {projectBundle} from '../../prototypes/avr-offline/project-bridge';
 
@@ -48,8 +48,8 @@ export default function OfflineAvrPanel({project,stop,run}:{project:Project;stop
       <button disabled={preparing||busy} onClick={()=>void prepare()}>{preparing?'Spremanje paketa…':ready?'Provjeri i dopuni paket':'Pripremi offline prevoditelj'}</button>
       <button disabled={!ready||busy||preparing||!!unsupported} onClick={()=>void compile()}>Prevedi u pregledniku</button>
       {busy&&<button onClick={()=>task.current.cancel()}>Prekini offline prevođenje</button>}
-      <button disabled={!valid||busy||!!unsupported} onClick={run}>Pokreni offline rezultat</button>
-      <button disabled={!valid||busy||!!unsupported} onClick={()=>void exportResult()}>Izvezi prototipni rezultat</button>
+      <button disabled={!valid||busy||!!unsupported||!prefersOffline(project)} onClick={run}>Pokreni offline rezultat</button>
+      <button disabled={!valid||busy||!!unsupported||!prefersOffline(project)} onClick={()=>void exportResult()}>Izvezi prototipni rezultat</button>
     </div>
     <p className="build-small">Jedan main.ino i dodatne C/C++ datoteke u korijenu; deklariraj funkcije prije uporabe. Prototipni rezultat služi simulaciji i zasebnom izvozu. Službena predaja i bodovanje koriste postojeći školski postupak.</p>
   </section>;
