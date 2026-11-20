@@ -39,8 +39,8 @@ export function useRuntime() {
     try {
       const prototype=offlineArtifact!==undefined;
       if(prototype&&!OFFLINE_AVR)throw Error('Offline prototip nije uključen u ovoj izgradnji.');
-      if(prototype)await validateResult(offlineInput(p),offlineArtifact);
-      const ready=prototype?p:await projectWithBuild(p);
+      if(OFFLINE_AVR&&prototype)await validateResult(offlineInput(p),offlineArtifact);
+      const ready=OFFLINE_AVR&&prototype?p:await projectWithBuild(p);
       if(ticket!==launch.current)return;
       const snapshot = prepareRun(ready);
       setLiveInputs({...rtcMemory.current.prepare(p,snapshot.circuit),...sdMemory.current.prepare(p,snapshot.circuit)});
@@ -55,7 +55,7 @@ export function useRuntime() {
         if(event.type==='error'){append(event.message+'\n');setState('error');void session.current?.stop();}
       };
       if(snapshot.project.language==='arduino-cpp'){
-        if(prototype){
+        if(OFFLINE_AVR&&prototype){
           const artifact=await validateResult(offlineInput(snapshot.project),offlineArtifact);
           if(ticket!==launch.current)return;
           append(`Offline AVR prototip · Flash ${artifact.flashBytes} B · statički SRAM ${artifact.staticRamBytes} B\n`);

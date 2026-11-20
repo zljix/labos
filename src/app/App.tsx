@@ -426,7 +426,7 @@ export default function App() {
       const next=imported.project,copy=forkProject(next);
       runtime.stop();
       await ws.add(copy);
-      if(imported.result)await saveOffline(copy,imported.result);
+      if(OFFLINE_AVR&&imported.result)await saveOffline(copy,imported.result);
       setDialog(null);
       setLabTab(readWork(next)||next.files[URS_WORK]?"lesson":"circuit");setMobileTab("lab");
       notify("Projekt je uvezen kao zasebna kopija. Program nije pokrenut.");

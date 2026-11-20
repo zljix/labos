@@ -33,7 +33,7 @@ async function compile(){
 async function run(marker){
  await page.getByRole('button',{name:'Pokreni offline rezultat',exact:true}).click();
  await page.waitForFunction(m=>document.querySelector('[aria-label="Izlaz programa"]')?.textContent.includes(m),marker,{timeout:30000});
- assert.match(await page.getByLabel('Izlaz programa',{exact:true}).textContent(),/Offline AVR prototip/);
+ assert.match(await page.locator('pre[aria-label="Izlaz programa"]').textContent(),/Offline AVR prototip/);
  await page.locator('.avr-indicator.on').waitFor({timeout:10000});
  await page.getByRole('button',{name:'Zaustavi',exact:true}).click();
 }
